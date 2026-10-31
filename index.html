@@ -195,10 +195,25 @@ textarea.inp{min-height:150px;resize:vertical;line-height:1.7;background:#fff re
 .reasons{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .reasons button{font-size:12px;padding:3px 10px;border:1px solid var(--rule);border-radius:999px;background:#fff;color:var(--ink-2)}
 .memo{white-space:pre-wrap;line-height:1.75}
+.voice{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;min-height:40px}
+.voice .mic{display:flex;align-items:center;gap:6px;background:var(--pen);color:#fff;border-radius:999px;padding:8px 14px;font-size:14px;font-weight:600}
+.voice .vhint{font-size:12px;color:var(--ink-2);flex:1;min-width:140px}
+.voice .vhint.err{color:var(--warn)}
+.voice.rec{background:var(--warn-soft);border-radius:12px;padding:8px 10px}
+.recdot{width:10px;height:10px;border-radius:50%;background:var(--warn);animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.25}}
+.rectime{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--warn)}
+.voice .stopbtn{background:var(--ink);color:var(--sheet);border-radius:999px;padding:7px 14px;font-size:14px;font-weight:600}
+.voice .cancelbtn{color:var(--ink-2);font-size:13px}
+.spin{width:14px;height:14px;border:2px solid var(--rule);border-top-color:var(--pen);border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.recdot,.spin{animation:none}}
+.vfab{position:fixed;right:calc(max(18px,calc(50% - 262px)) + 132px);bottom:calc(76px + env(safe-area-inset-bottom));width:48px;height:48px;border-radius:50%;background:var(--pen);color:#fff;display:grid;place-items:center;box-shadow:0 6px 18px rgba(37,97,92,.3);z-index:20}
 </style>
 </head>
 <body>
 <div class="app" id="app"></div>
+<button class="vfab" id="vfab" data-act="quickvoice" aria-label="说一段"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z"/></svg></button>
 <button class="fab" id="fab" aria-label="写一笔">＋ <span>写一笔</span></button>
 <nav><div class="in" id="nav"></div></nav>
 <div class="mask" id="mask"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
@@ -363,7 +378,8 @@ async function aiSplit(l){
   const user=`今天：${dkey(l.ts)}（周${WEEK[new Date(l.ts).getDay()]}）
 项目列表：${JSON.stringify(projects)}
 未解决磕绊：${JSON.stringify(open)}
-用户原文：${l.raw}`;
+用户原文：${l.raw}${l.voiceEmotion&&l.voiceEmotion!=='neutral'?`
+（这段是语音转的文字，语音里听出的情绪是 ${l.voiceEmotion}，判断 mood 时可以参考，但以内容为准）`:''}`;
   const out=parseJSON(await chat([{role:'system',content:sys},{role:'user',content:user}],0.2));
   const ids=new Set(act.map(p=>p.id)),openIds=new Set(open.map(b=>b.id));
   const num=v=>v===null||v===undefined||v===''||isNaN(+v)?null:+v;
@@ -679,6 +695,120 @@ function toMarkdown(){
   return out.join('\n');
 }
 
+
+/* ============ 语音 ============ */
+const ASR_URL='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const MIC_SVG='<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z"/></svg>';
+const EMO={sad:'low',angry:'low',fearful:'low',disgusted:'low',happy:'good',surprised:'good',neutral:'neutral'};
+const MAX_REC=10*60;
+function asrKey(){const st=S.settings;return (st.asrKey||'').trim()||(st.preset==='qwen'?st.key:'');}
+function voiceEngine(){const e=S.settings.voice||'auto';
+  if(e==='qwen')return asrKey()?'qwen':'need-key';
+  if(e==='browser')return SR?'browser':'no-browser';
+  return asrKey()?'qwen':(SR?'browser':'need-key');}
+let REC=null;
+function vbar(html,cls=''){const el=$('#vbar');if(el){el.className='voice '+cls;el.innerHTML=html;}}
+function voiceIdle(msg,err){
+  const eng=voiceEngine();
+  vbar(`<button class="mic" data-act="voice" type="button">${MIC_SVG}<span>按一下，开始说</span></button><span class="vhint ${err?'err':''}">${msg?esc(msg):eng==='qwen'?'说完点「说完了」，会转成文字放进上面的框里':eng==='browser'?'用浏览器自带识别，边说边出字':'先到「设置 → 语音输入」填百炼 API Key'}</span>`);
+}
+function fmtSec(s){s=Math.floor(s);return pad(Math.floor(s/60))+':'+pad(s%60);}
+async function startVoice(){
+  if(REC)return;
+  const eng=voiceEngine();
+  if(eng==='need-key'){voiceIdle('还没有可用的语音识别：到「设置 → 语音输入」填上阿里云百炼的 API Key。',true);return;}
+  if(eng==='no-browser'){voiceIdle('这个浏览器没有自带语音识别，到「设置 → 语音输入」改用通义千问。',true);return;}
+  const ta=$('#ctext');
+  if(eng==='browser'){
+    const sr=new SR();sr.lang='zh-CN';sr.continuous=true;sr.interimResults=true;
+    REC={engine:'browser',sr,base:ta.value?ta.value.replace(/\s+$/,'')+'\n':'',fin:'',t0:Date.now(),stopping:false};
+    sr.onresult=ev=>{let interim='';for(let i=ev.resultIndex;i<ev.results.length;i++){const r=ev.results[i];if(r.isFinal)REC.fin+=r[0].transcript;else interim+=r[0].transcript;}
+      if($('#ctext'))$('#ctext').value=REC.base+REC.fin+interim;};
+    sr.onerror=ev=>{const m={'not-allowed':'没有麦克风权限：在浏览器设置里允许这个网页使用麦克风。','network':'浏览器语音识别连不上服务器（国内很常见），到「设置 → 语音输入」改用通义千问。','no-speech':'没听到声音，再试一次。','audio-capture':'找不到麦克风。'}[ev.error]||('语音识别出错：'+ev.error);
+      const r=REC;REC=null;clearInterval(r&&r.timer);try{sr.abort();}catch(e){}voiceIdle(m,true);};
+    sr.onend=()=>{if(!REC||REC.sr!==sr)return;if(!REC.stopping){try{sr.start();return;}catch(e){}}finishBrowser();};
+    try{sr.start();}catch(e){REC=null;voiceIdle('启动语音识别失败：'+e.message,true);return;}
+  }else{
+    let stream;
+    try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});}
+    catch(e){voiceIdle(e.name==='NotAllowedError'?'没有麦克风权限：在浏览器设置里允许这个网页使用麦克风，再点一次。':'打不开麦克风：'+(e.message||e.name),true);return;}
+    const types=['audio/mp4','audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus'];
+    const mt=window.MediaRecorder&&types.find(t=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t));
+    let mr;try{mr=mt?new MediaRecorder(stream,{mimeType:mt}):new MediaRecorder(stream);}catch(e){stream.getTracks().forEach(t=>t.stop());voiceIdle('这个浏览器不支持录音。',true);return;}
+    REC={engine:'qwen',stream,mr,chunks:[],t0:Date.now(),cancel:false};
+    mr.ondataavailable=e=>{if(e.data&&e.data.size)REC&&REC.chunks.push(e.data);};
+    mr.onstop=()=>{const r=REC;stream.getTracks().forEach(t=>t.stop());if(!r||r.cancel){REC=null;return;}
+      const blob=new Blob(r.chunks,{type:mr.mimeType||mt||'audio/webm'});REC=null;transcribe(blob);};
+    mr.start(1000);
+  }
+  const tick=()=>{if(!REC)return;const s=(Date.now()-REC.t0)/1000;
+    vbar(`<span class="recdot"></span><span class="rectime">${fmtSec(s)}</span><span class="vhint">${REC.engine==='browser'?'边说边出字…':'在听…'}</span><button class="stopbtn" data-act="voicestop" type="button">说完了</button><button class="cancelbtn" data-act="voicecancel" type="button">取消</button>`,'rec');
+    if(s>=MAX_REC)stopVoice();};
+  tick();REC.timer=setInterval(tick,500);
+}
+function finishBrowser(){const r=REC;REC=null;clearInterval(r&&r.timer);
+  const got=(r&&r.fin||'').trim();if($('#ctext')&&r)$('#ctext').value=r.base+r.fin;
+  if(!got){voiceIdle('没识别到内容，再试一次。',true);return;}
+  afterVoice();}
+function stopVoice(){if(!REC)return;clearInterval(REC.timer);
+  if(REC.engine==='browser'){REC.stopping=true;try{REC.sr.stop();}catch(e){finishBrowser();}vbar('<span class="vhint">收尾中…</span>','busy');}
+  else{vbar('<span class="spin"></span><span class="vhint">正在处理录音…</span>','busy');REC.mr.stop();}}
+function cancelVoice(){if(!REC)return;const r=REC;clearInterval(r.timer);
+  if(r.engine==='browser'){REC=null;try{r.sr.abort();}catch(e){}if($('#ctext'))$('#ctext').value=r.base.replace(/\n$/,'');}
+  else{r.cancel=true;try{r.mr.stop();}catch(e){}r.stream.getTracks().forEach(t=>t.stop());REC=null;}
+  voiceIdle();}
+function encodeWav(f32,rate){const buf=new ArrayBuffer(44+f32.length*2),v=new DataView(buf);
+  const w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
+  w(0,'RIFF');v.setUint32(4,36+f32.length*2,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+  v.setUint32(24,rate,true);v.setUint32(28,rate*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,f32.length*2,true);
+  for(let i=0;i<f32.length;i++){const s=Math.max(-1,Math.min(1,f32[i]));v.setInt16(44+i*2,s<0?s*0x8000:s*0x7FFF,true);}
+  return new Blob([buf],{type:'audio/wav'});}
+const toDataURI=b=>new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=rej;fr.readAsDataURL(b);});
+async function splitAudio(blob){
+  const AC=window.AudioContext||window.webkitAudioContext;const ac=new AC();
+  const ab=blob.arrayBuffer?await blob.arrayBuffer():await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=rej;fr.readAsArrayBuffer(blob);});
+  const audio=await new Promise((res,rej)=>{const p=ac.decodeAudioData(ab,res,rej);if(p&&p.then)p.then(res,rej);});
+  try{ac.close();}catch(e){}
+  const rate=16000,len=Math.max(1,Math.ceil(audio.duration*rate));
+  const OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext;const off=new OAC(1,len,rate);
+  const src=off.createBufferSource();src.buffer=audio;src.connect(off.destination);src.start(0);
+  const rendered=await new Promise((res,rej)=>{off.oncomplete=e=>res(e.renderedBuffer);const p=off.startRendering();if(p&&p.then)p.then(res,rej);});
+  const data=rendered.getChannelData(0),seg=150*rate,out=[];
+  for(let i=0;i<data.length;i+=seg){let end=Math.min(i+seg,data.length);if(data.length-end<3*rate)end=data.length;out.push(encodeWav(data.subarray(i,end),rate));if(end===data.length)break;}
+  return {parts:out,duration:audio.duration};
+}
+async function asrCall(blob){
+  const r=await fetch(ASR_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+asrKey()},
+    body:JSON.stringify({model:'qwen3-asr-flash',messages:[{role:'user',content:[{type:'input_audio',input_audio:{data:await toDataURI(blob)}}]}],stream:false,asr_options:{enable_itn:true}})});
+  if(!r.ok){let t='';try{t=(await r.json()).error?.message||'';}catch(e){}throw new Error('语音识别返回 '+r.status+(t?'：'+t:'')+(r.status===401?'。检查百炼 API Key。':''));}
+  const j=await r.json();const m=j.choices?.[0]?.message||{};
+  return {text:(m.content||'').trim(),emotion:(m.annotations||[]).find(a=>a.emotion)?.emotion||''};
+}
+async function transcribe(blob){
+  vbar('<span class="spin"></span><span class="vhint">正在转文字…</span>','busy');
+  try{
+    const {parts,duration}=await splitAudio(blob);
+    if(duration<0.8){voiceIdle('太短了，没听清，再说一次。',true);return;}
+    let text='';const emos=[];
+    for(let i=0;i<parts.length;i++){
+      if(parts.length>1)vbar(`<span class="spin"></span><span class="vhint">正在转文字… ${i+1}/${parts.length}</span>`,'busy');
+      const r=await asrCall(parts[i]);text+=r.text;if(r.emotion)emos.push(r.emotion);
+    }
+    if(!text.trim()){voiceIdle('没识别到内容，再试一次。',true);return;}
+    const ta=$('#ctext');if(!ta)return;
+    ta.value=(ta.value.trim()?ta.value.replace(/\s+$/,'')+'\n':'')+text.trim();
+    const neg=emos.find(e=>EMO[e]==='low'),pos=emos.find(e=>EMO[e]==='good');
+    draft.voiceEmotion=neg||pos||emos[0]||'';
+    afterVoice();
+  }catch(e){voiceIdle(e.message||'转文字失败，再试一次。',true);}
+}
+function afterVoice(){
+  if(S.settings.voiceAuto&&$('#ctext')&&$('#ctext').value.trim()){document.querySelector('[data-act="submit"]')?.click();return;}
+  voiceIdle('转好了，可以改一改再点「写好了」，也可以接着说。');
+  const ta=$('#ctext');if(ta){ta.scrollTop=ta.scrollHeight;}
+}
+
 /* ============ 视图 ============ */
 let V={tab:'home',pid:null,filter:'all',replyOpen:null,listTab:'blocks',reasonFor:null};
 const $=s=>document.querySelector(s);
@@ -696,7 +826,7 @@ function render(){
   const navs=[['home','✎','手记'],['projects','▦','项目'],['lists','◇','清单'],['settings','⚙','设置']];
   const cur=V.tab==='project'?'projects':V.tab;
   $('#nav').innerHTML=navs.map(([k,i,l])=>`<button class="${cur===k?'on':''}" data-nav="${k}"><i>${i}</i>${l}${k==='lists'&&openN?`<span class="badge">${openN}</span>`:''}</button>`).join('');
-  $('#fab').style.display=V.tab==='settings'?'none':'flex';
+  $('#fab').style.display=V.tab==='settings'?'none':'flex';$('#vfab').style.display=V.tab==='settings'?'none':'grid';
 }
 function header(title,sub){const d=new Date();
   return `<div class="top"><h1>${title}</h1><div class="date">${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())}<br>周${WEEK[d.getDay()]}</div></div>${sub?`<p class="sub">${sub}</p>`:''}`;}
@@ -828,6 +958,12 @@ function viewSettings(){
   <label class="f">模型名</label><input class="inp" id="s_model" value="${esc(st.model)}" placeholder="deepseek-flash">
   <label class="f">API Key</label><input class="inp" id="s_key" type="password" value="${esc(st.key)}" placeholder="sk-…" autocomplete="off">
   <button class="primary" data-act="savecfg">保存</button><button class="ghost" data-act="testcfg">测试连接</button></div>
+  <div class="card"><h3 style="font-size:15px;margin-bottom:4px">语音输入</h3><p>在「写一笔」里点麦克风说话，转成文字后再提交。录音只用来转文字，不会保存。</p>
+  <label class="f">识别方式</label><div class="seg">${[['auto','自动'],['qwen','通义千问'],['browser','浏览器自带']].map(([k,v])=>`<button class="${(st.voice||'auto')===k?'on':''}" data-voice="${k}">${v}</button>`).join('')}</div>
+  <p class="hint">通义千问最稳，需要阿里云百炼的 API Key；浏览器自带的免费，但国内常常连不上。自动：有百炼 Key 就用通义千问。</p>
+  <label class="f">阿里云百炼 API Key</label><input class="inp" id="s_asrkey" type="password" value="${esc(st.asrKey||'')}" placeholder="${st.preset==='qwen'?'上面服务商选了通义千问，可以不填':'sk-…'}" autocomplete="off" data-setting="asrKey">
+  <label class="toggle"><input type="checkbox" id="s_vauto" ${st.voiceAuto?'checked':''} data-check="voiceAuto"> 转好文字后直接提交（不再检查一遍）</label>
+  <p class="hint">现在会用：${{qwen:'通义千问',browser:'浏览器自带','need-key':'还不能用（缺百炼 Key）','no-browser':'还不能用（这个浏览器没有自带识别）'}[voiceEngine()]}</p></div>
   <div class="card"><h3 style="font-size:15px;margin-bottom:4px">你的伙伴</h3><p>一个记得你所有项目的老朋友：先接住，再说话，说话要具体。</p>
   <div class="row2"><div><label class="f">它叫什么</label><input class="inp" id="s_ainame" value="${esc(st.aiName)}" placeholder="小记" maxlength="8" data-setting="aiName"></div>
   <div><label class="f">它怎么称呼你</label><input class="inp" id="s_nick" value="${esc(st.nick)}" placeholder="可不填" maxlength="10" data-setting="nick"></div></div>
@@ -843,21 +979,22 @@ function viewSettings(){
 
 /* ============ 弹层 ============ */
 function openSheet(html){$('#sheet').innerHTML=html;$('#mask').classList.add('show');}
-function closeSheet(){$('#mask').classList.remove('show');}
+function closeSheet(){if(REC)cancelVoice();$('#mask').classList.remove('show');}
 let draft={};
-function composeSheet(pid,editId){
+function composeSheet(pid,editId,opts={}){
   const act=activeProjects();
   if(!act.length){projSheet();return;}
   const e=editId?L(editId):null;
   const ctx=pid||(V.tab==='project'?V.pid:(V.filter!=='all'?V.filter:null));
-  draft={pid:e?(e.forcePid||'auto'):(ctx||(act.length>1?'auto':act[0].id)),editId};
+  draft={pid:e?(e.forcePid||'auto'):(ctx||(act.length>1?'auto':act[0].id)),editId,voiceEmotion:''};
   openSheet(`<h3>${e?'编辑记录':'写一笔'}<button data-act="close">取消</button></h3>
   <label class="f">哪个项目</label><div class="seg" id="cpick">${act.length>1?`<button class="auto ${draft.pid==='auto'?'on':''}" data-pick="auto">✦ 让${AN()}分</button>`:''}${act.map(p=>`<button class="${draft.pid===p.id?'on':''}" data-pick="${p.id}"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</button>`).join('')}</div>
-  <label class="f">今天怎么样</label><textarea class="inp" id="ctext" placeholder="随便写：做了什么、学到什么、花了多少时间和钱、卡在哪里、冒出什么想法……几个项目混着写也行。">${esc(e?.raw||'')}</textarea>
-  <div class="hint">说出具体的时间和金额会自动记下，比如"两个半小时""花了 380"。手机上可以用输入法的语音输入。</div>
+  <label class="f">今天怎么样</label><div class="voice" id="vbar"></div><textarea class="inp" id="ctext" placeholder="随便写：做了什么、学到什么、花了多少时间和钱、卡在哪里、冒出什么想法……几个项目混着写也行。">${esc(e?.raw||'')}</textarea>
+  <div class="hint">说出具体的时间和金额会自动记下，比如"两个半小时""花了 380"。</div>
   <label class="toggle"><input type="checkbox" id="cquiet" ${e?.mode==='log_only'?'checked':''}> 只记录，不用回</label>
   <button class="primary" data-act="submit">${e?'保存并重新整理':'写好了'}</button>`);
-  setTimeout(()=>$('#ctext')?.focus(),250);
+  voiceIdle();
+  if(!opts.voice)setTimeout(()=>$('#ctext')?.focus(),250);
 }
 let cdraft=null;
 function openConfirm(id){const l=L(id);if(!l)return;cdraft={id,items:l.items.map(i=>({...i}))};renderConfirm();$('#mask').classList.add('show');}
@@ -931,9 +1068,14 @@ document.addEventListener('click',ev=>{
   if(d.delproj){if(confirm('删除项目会同时删除它的全部记录，确定？')){const id=d.delproj;S.projects=S.projects.filter(p=>p.id!==id);
     S.logs.forEach(l=>l.items=l.items.filter(i=>i.pid!==id));S.logs=S.logs.filter(l=>l.items.length||l.status!=='done');S.blockers=S.blockers.filter(b=>b.pid!==id);save();closeSheet();V.tab='projects';render();}return;}
   if(d.preset){const pr=PRESETS[d.preset];S.settings.preset=d.preset;if(d.preset!=='custom'){$('#s_base').value=pr.base;$('#s_model').value=pr.model;}document.querySelectorAll('[data-preset]').forEach(b=>b.classList.toggle('on',b.dataset.preset===d.preset));return;}
+  if(d.voice){S.settings.voice=d.voice;save();render();return;}
   if(d.tone){S.settings.tone=d.tone;save();render();toast('说话风格：'+TONES[d.tone].label);return;}
   const act=d.act;if(!act)return;
   if(act==='close'){closeSheet();return;}
+  if(act==='voice'){startVoice();return;}
+  if(act==='voicestop'){stopVoice();return;}
+  if(act==='voicecancel'){cancelVoice();return;}
+  if(act==='quickvoice'){if(!activeProjects().length){projSheet();return;}composeSheet(null,null,{voice:true});startVoice();return;}
   if(act==='compose'){composeSheet();return;}
   if(act.startsWith('compose:')){composeSheet(act.slice(8));return;}
   if(act==='newproj'){projSheet();return;}
@@ -943,11 +1085,12 @@ document.addEventListener('click',ev=>{
   if(act==='confirmedit'){const l=L(cdraft.id);composeSheet(null,l.id);return;}
   if(act==='clearfb'){if(confirm('清空所有评价记录？')){S.feedback=[];save();render();}return;}
   if(act==='submit'){
+    if(REC){toast('先点「说完了」');return;}
     const raw=$('#ctext').value.trim();if(!raw){toast('先写点什么');return;}
     const mode=$('#cquiet').checked?'log_only':'normal';const forcePid=draft.pid==='auto'?null:draft.pid;
     let l=draft.editId?L(draft.editId):null;
     if(l){undoLog(l);Object.assign(l,{raw,mode,forcePid,items:[],reply:'',thread:[],exception:false});S.feedback=S.feedback.filter(f=>f.ref!==l.id);}
-    else{l={id:uid('e'),ts:Date.now(),raw,mode,forcePid,items:[],mood:'neutral',reply:'',status:'splitting',thread:[]};S.logs.push(l);}
+    else{l={id:uid('e'),ts:Date.now(),raw,mode,forcePid,items:[],mood:'neutral',reply:'',status:'splitting',thread:[],voiceEmotion:draft.voiceEmotion||''};S.logs.push(l);}
     save();closeSheet();if(V.tab!=='project')V.tab='home';scrollTo(0,0);runLog(l);return;
   }
   if(act==='saveproj'){
@@ -963,7 +1106,7 @@ document.addEventListener('click',ev=>{
     toast('测试中…');chat([{role:'user',content:'用一句话（20字内）跟我打个招呼'}]).then(r=>alert('连接成功：\n'+r)).catch(e=>alert(e.message));return;
   }
   if(act==='exportmd'){download(toMarkdown(),'项目手记-'+dkey(Date.now())+'.md','text/markdown');return;}
-  if(act==='export'){download(JSON.stringify({...S,settings:{...S.settings,key:''}},null,1),'项目手记备份-'+dkey(Date.now())+'.json','application/json');return;}
+  if(act==='export'){download(JSON.stringify({...S,settings:{...S.settings,key:'',asrKey:''}},null,1),'项目手记备份-'+dkey(Date.now())+'.json','application/json');return;}
   if(act==='import'){$('#impfile').click();return;}
   if(act==='wipe'){if(confirm('清空全部项目和记录？此操作不能撤销。')&&confirm('再确认一次：真的清空？')){const st=S.settings;S=blank();S.settings=st;save();render();}return;}
 });
@@ -978,6 +1121,7 @@ document.addEventListener('change',ev=>{
   if(ev.target.id==='impfile'){const f=ev.target.files[0];if(!f)return;f.text().then(t=>{const d=JSON.parse(t);if(!d.projects)throw 0;
     const key=S.settings.key;S=d.v===3?fixup(d):migrate(d);if(!S.settings.key)S.settings.key=key;save();render();toast('已恢复 '+S.logs.length+' 条记录');}).catch(()=>alert('这个文件不是项目手记的备份。'));}
   const k=ev.target.dataset?.setting;if(k){S.settings[k]=ev.target.value.trim()||(k==='aiName'?'小记':'');save();render();}
+  const c=ev.target.dataset?.check;if(c){S.settings[c]=ev.target.checked;save();}
 });
 document.addEventListener('keydown',ev=>{if(ev.key==='Escape')closeSheet();if((ev.metaKey||ev.ctrlKey)&&ev.key==='Enter'&&$('#ctext')&&$('#mask').classList.contains('show'))document.querySelector('[data-act="submit"]')?.click();});
 
