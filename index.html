@@ -279,7 +279,22 @@ textarea.inp{min-height:150px;resize:vertical;line-height:1.7;background:#fff re
 .cop button{font-size:12px;color:var(--ink-3);margin-left:8px;text-decoration:underline;text-underline-offset:3px}
 .cop.wait{color:var(--ink-3)}
 .cop.rv b{color:var(--gold)}
-.phrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 8px}
+.phrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0 0}
+#ctext{min-height:210px;font-size:16px}
+.ctools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+.ctools .voice{margin:0;flex:0 1 auto;min-height:0}
+.ctools .voice .vhint{flex-basis:100%;min-width:0}
+.ctools .voice.rec,.ctools .voice.busy{flex:1 1 100%}
+.ctools .phadd{padding:8px 14px}
+.ctools .phadd[disabled]{opacity:.45}
+.ctools .phadd[hidden]{display:none}
+.cmeta{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:14px 0 0;font-size:13px;color:var(--ink-2)}
+.cto{display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--ink-2);padding:4px 0;background:none;border:0}
+.cto i{font-style:normal;color:var(--pen);text-decoration:underline;text-underline-offset:3px;margin-left:2px}
+.ctog{display:flex;align-items:center;gap:6px;cursor:pointer}
+.ctog input{width:16px;height:16px;accent-color:var(--pen)}
+.cpick{margin-top:8px}
+.cpick[hidden]{display:none}
 .phrow:empty{display:none}
 .phadd{display:flex;align-items:center;gap:6px;border:1.5px solid var(--pen);color:var(--pen);border-radius:999px;padding:6px 13px;font-size:14px;font-weight:600;background:transparent}
 .ph{position:relative;width:64px;height:64px;border-radius:10px;overflow:hidden;background:var(--paper);flex:none;padding:0;border:0}
@@ -298,6 +313,7 @@ textarea.inp{min-height:150px;resize:vertical;line-height:1.7;background:#fff re
 .cnew button[type=button]{color:var(--ink-3);font-weight:400}
 .primary.danger{background:var(--warn)}
 /* ===== v3.14：手记目录 / 复盘独立 ===== */
+/* v3.15：写一笔精简——输入框置顶，项目选择收起 */
 nav .in{grid-template-columns:repeat(5,1fr)}
 .rk{font-family:var(--sans);font-size:11px;font-weight:600;color:#fff;background:var(--pen);border-radius:4px;padding:0 5px;line-height:17px;flex:none}
 .rk.k-week{background:var(--ink)}.rk.k-month{background:var(--gold)}
@@ -1316,18 +1332,18 @@ async function describePhotos(l){
 }
 function phRow(){const el=$('#phrow');if(!el||!draft)return;const ps=draft.photos||[];
   el.innerHTML=ps.map((p,i)=>`<span class="ph"><img src="${p.data}" alt="照片${i+1}"><button type="button" data-phrm="${i}" aria-label="去掉这张">×</button></span>`).join('')+
-  (ps.length<MAX_PH?`<button type="button" class="phadd" data-act="addphoto"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9Zm3 5a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/></svg><span>${ps.length?'再加':'加照片'}</span></button>`:'')+
-  (ps.length&&!canSee()?`<span class="vhint err" style="flex-basis:100%">现在的模型看不了图：照片会存下，但${AN()}看不到内容。到「设置」把服务商换成 DeepSeek，或填上百炼 Key。</span>`:'');}
+  (ps.length&&!canSee()?`<span class="vhint err" style="flex-basis:100%">现在的模型看不了图：照片会存下，但${AN()}看不到内容。到「设置」把服务商换成 DeepSeek，或填上百炼 Key。</span>`:'');
+  const bt=$('#phbtn'),lb=$('#phlbl');if(bt){bt.disabled=ps.length>=MAX_PH;if(lb)lb.textContent=ps.length?`照片 ${ps.length}/${MAX_PH}`:'加照片';}}
 async function addPhotos(files){draft.photos=draft.photos||[];const room=MAX_PH-draft.photos.length;
   const fs=[...files].filter(f=>/^image\//.test(f.type)||/\.(jpe?g|png|heic|heif|webp|gif)$/i.test(f.name)).slice(0,room);
   if(files.length>room)toast('一条最多 '+MAX_PH+' 张');
   for(const f of fs){const d=await shrink(f);if(d)draft.photos.push({id:uid('ph'),data:d,fresh:true});}
   phRow();}
 let REC=null;
-function vbar(html,cls=''){const el=$('#vbar');if(el){el.className='voice '+cls;el.innerHTML=html;}}
+function vbar(html,cls=''){const el=$('#vbar');if(el){el.className='voice '+cls;el.innerHTML=html;}const pb=$('#phbtn');if(pb)pb.hidden=!!cls;}
 function voiceIdle(msg,err){
-  const eng=voiceEngine();
-  vbar(`<button class="mic" data-act="voice" type="button">${MIC_SVG}<span>按一下，开始说</span></button><span class="vhint ${err?'err':''}">${msg?esc(msg):eng==='qwen'?'说完点「说完了」，会转成文字放进上面的框里':eng==='browser'?'用浏览器自带识别，边说边出字':'先到「设置 → 语音输入」填百炼 API Key'}</span>`);
+  const eng=voiceEngine();const tip=msg||(eng==='qwen'||eng==='browser'?'':'语音要先到「设置 → 语音输入」填百炼 API Key');
+  vbar(`<button class="mic" data-act="voice" type="button">${MIC_SVG}<span>按一下，开始说</span></button>${tip?`<span class="vhint ${err?'err':''}">${esc(tip)}</span>`:''}`);
 }
 function fmtSec(s){s=Math.floor(s);return pad(Math.floor(s/60))+':'+pad(s%60);}
 async function startVoice(){
@@ -1733,17 +1749,20 @@ function composeSheet(pid,editId,opts={}){
   draft={pid:e?(e.forcePid||'auto'):(ctx||(act.length>1?'auto':act[0].id)),editId,voiceEmotion:'',photos:[]};
   openSheet(`<h3>${e?'编辑记录':'写一笔'}<button data-act="close">取消</button></h3>
   ${e?'':'<div id="cop"></div>'}
-  <label class="f">哪个项目</label><div class="seg" id="cpick">${act.length>1?`<button class="auto ${draft.pid==='auto'?'on':''}" data-pick="auto">✦ 让${AN()}分</button>`:''}${act.map(p=>`<button class="${draft.pid===p.id?'on':''}" data-pick="${p.id}"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</button>`).join('')}</div>
-  <label class="f">今天怎么样</label><div class="voice" id="vbar"></div><div class="phrow" id="phrow"></div><input type="file" id="phfile" accept="image/*" multiple hidden><textarea class="inp" id="ctext" placeholder="随便写：做了什么、学到什么、花了多少时间和钱、卡在哪里、冒出什么想法……几个项目混着写也行。">${esc(e?.raw||'')}</textarea>
-  <div class="hint">说出具体的时间和金额会自动记下，比如"两个半小时""花了 380"。</div>
-  <label class="toggle"><input type="checkbox" id="cquiet" ${e?.mode==='log_only'?'checked':''}> 只记录，不用回</label>
+  <textarea class="inp" id="ctext" placeholder="随便写：做了什么、花了多久多少钱、卡在哪、冒出什么想法……几个项目混着写也行。">${esc(e?.raw||'')}</textarea>
+  <div class="phrow" id="phrow"></div><input type="file" id="phfile" accept="image/*" multiple hidden>
+  <div class="ctools"><div class="voice" id="vbar"></div><button type="button" class="phadd" id="phbtn" data-act="addphoto"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9Zm3 5a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/></svg><span id="phlbl">加照片</span></button></div>
+  <div class="cmeta">${act.length>1?`<button type="button" class="cto" data-act="cpicktog" id="cpickbtn"></button>`:`<span class="cto solo">归到 <span class="dot" style="background:${act[0].color}"></span>${esc(act[0].name)}</span>`}<label class="ctog"><input type="checkbox" id="cquiet" ${e?.mode==='log_only'?'checked':''}> 只记录，不用回</label></div>
+  ${act.length>1?`<div class="seg cpick" id="cpick" hidden><button class="auto ${draft.pid==='auto'?'on':''}" data-pick="auto">✦ 让${AN()}分</button>${act.map(p=>`<button class="${draft.pid===p.id?'on':''}" data-pick="${p.id}"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</button>`).join('')}</div>`:''}
   <button class="primary" data-act="submit">${e?'保存并重新整理':'写好了'}</button>`);
-  voiceIdle();phRow();
+  voiceIdle();phRow();cpickLbl();
   if(e&&(e.photos||[]).length)Promise.all(e.photos.map(async p=>({id:p.id,data:await phGet(p.id)}))).then(ps=>{if(draft.editId!==e.id)return;draft.photos=ps.filter(p=>p.data);phRow();});
   if(opts.photo)setTimeout(()=>$('#phfile')?.click(),0);
   if(!e){const dr=getDraft();if(dr&&!$('#ctext').value){$('#ctext').value=dr;}fillCop();}
   if(!opts.voice)setTimeout(()=>$('#ctext')?.focus(),250);
 }
+function cpickLbl(){const b=$('#cpickbtn');if(!b||!draft)return;const p=draft.pid!=='auto'&&P(draft.pid);
+  b.innerHTML=p?`归到 <span class="dot" style="background:${p.color}"></span>${esc(p.name)} <i>改</i>`:`✦ ${esc(AN())}自动分项目 <i>改</i>`;}
 // 写一笔顶部：小记的开场关心 / 新复盘，一行带过
 function fillCop(){const el=$('#cop');if(!el)return;let h='';const op=S.opener;
   if(op&&op.day===dkey(Date.now())&&!op.dismissed){
@@ -1893,7 +1912,7 @@ document.addEventListener('click',ev=>{
   if(d.open){V.tab='project';V.pid=d.open;render();scrollTo(0,0);const p=P(d.open);if(p&&p.profile&&!p.pf&&!p.profiling&&S.settings.key)rebuildProfile(p.id,false);return;}
   if(d.rebuild){rebuildProfile(d.rebuild,true);return;}
   if(d.pfopen){V.pfOpen=V.pfOpen===d.pfopen?null:d.pfopen;render();return;}
-  if(d.pick){draft.pid=d.pick;document.querySelectorAll('[data-pick]').forEach(b=>b.classList.toggle('on',b.dataset.pick===d.pick));return;}
+  if(d.pick){draft.pid=d.pick;document.querySelectorAll('[data-pick]').forEach(b=>b.classList.toggle('on',b.dataset.pick===d.pick));cpickLbl();const s=$('#cpick');if(s)s.hidden=true;return;}
   if(d.cnew!==undefined){cdraft.newFor=+d.cnew;renderConfirm();return;}
   if(d.cnewcancel){cdraft.newFor=null;renderConfirm();return;}
   if(d.cpick){const [k,pid]=d.cpick.split('|');cdraft.items[+k].pid=pid;renderConfirm();return;}
@@ -1945,6 +1964,7 @@ document.addEventListener('click',ev=>{
   if(act==='toggleideas'){V.ideaAll=!V.ideaAll;render();return;}
   if(act==='voice'){startVoice();return;}
   if(act==='addphoto'){$('#phfile')?.click();return;}
+  if(act==='cpicktog'){const s=$('#cpick');if(s)s.hidden=!s.hidden;return;}
   if(act==='voicestop'){stopVoice();return;}
   if(act==='voicecancel'){cancelVoice();return;}
   if(act==='quickvoice'){if(!activeProjects().length){projSheet();return;}composeSheet(null,null,{voice:true});startVoice();return;}
