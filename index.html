@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#E9EDF1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>项目手记</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-screen-webfont@1.7.0/style.css">
+<style>
+:root{
+  --paper:#E9EDF1; --sheet:#F7F9FB; --ink:#1D2733; --ink-2:#5A6675; --ink-3:#7A8592;
+  --rule:#D5DCE3; --pen:#25615C; --pen-soft:#E1EEEC; --warn:#B4532A; --warn-soft:#F6E6DC;
+  --gold:#C98B1E;
+  --hand:"LXGW WenKai GB Screen","LXGW WenKai Screen","LXGW WenKai","Kaiti SC","STKaiti","KaiTi",serif;
+  --sans:-apple-system,"PingFang SC","HarmonyOS Sans SC","MiSans","Microsoft YaHei",sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none}
+:focus-visible{outline:2px solid var(--pen);outline-offset:2px;border-radius:6px}
+.app{max-width:560px;margin:0 auto;min-height:100vh;padding:0 16px calc(96px + env(safe-area-inset-bottom))}
+
+/* header */
+.top{padding:22px 2px 10px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.top h1{font-family:var(--hand);font-weight:700;font-size:28px;letter-spacing:1px;line-height:1.1}
+.top .date{font-family:var(--mono);font-size:12px;color:var(--ink-2);letter-spacing:.5px;text-align:right}
+.sub{color:var(--ink-2);font-size:13px;margin:0 2px 16px}
+
+/* nudges */
+.nudge{background:var(--sheet);border:1px solid var(--rule);border-left:3px solid var(--gold);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:14px;display:flex;gap:10px;align-items:flex-start}
+.nudge .hand{font-family:var(--hand);font-size:16px;color:var(--ink);flex:1}
+.nudge button{color:var(--pen);font-size:13px;white-space:nowrap;padding:2px 0}
+
+/* section title */
+.sec{display:flex;justify-content:space-between;align-items:baseline;margin:22px 2px 10px}
+.sec h2{font-size:13px;font-weight:600;color:var(--ink-2);letter-spacing:2px}
+.sec button{font-size:13px;color:var(--pen)}
+
+/* project tabs strip */
+.tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;padding:6px 12px;border-radius:999px;background:var(--sheet);border:1px solid var(--rule);font-size:13px;display:flex;align-items:center;gap:6px;color:var(--ink-2)}
+.tab.on{background:var(--ink);color:var(--sheet);border-color:var(--ink)}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+
+/* project cards */
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pcard{position:relative;background:var(--sheet);border:1px solid var(--rule);border-radius:12px;padding:14px 12px 12px 16px;text-align:left;overflow:hidden;min-height:118px;display:flex;flex-direction:column}
+.pcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--c)}
+.pcard .cat{font-size:11px;color:var(--ink-3);letter-spacing:1px}
+.pcard .nm{font-weight:600;font-size:16px;line-height:1.3;margin:2px 0 auto}
+.pcard .meta{font-family:var(--mono);font-size:11px;color:var(--ink-2);margin-top:10px;line-height:1.5}
+.pcard .stale{color:var(--warn)}
+.pcard.add{border-style:dashed;align-items:center;justify-content:center;color:var(--ink-2);font-size:14px}
+.pcard.add::before{display:none}
+
+/* entry card */
+.day{font-family:var(--mono);font-size:12px;color:var(--ink-3);margin:20px 2px 8px;letter-spacing:1px;display:flex;align-items:center;gap:10px}
+.day::after{content:"";flex:1;height:1px;background:var(--rule)}
+.entry{position:relative;background:var(--sheet);border:1px solid var(--rule);border-radius:12px;padding:12px 14px 12px 18px;margin-bottom:10px;overflow:hidden}
+.entry::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}
+.ehead{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--ink-2);margin-bottom:6px}
+.ehead .pn{display:flex;align-items:center;gap:6px;font-weight:600;color:var(--ink)}
+.ehead .tm{font-family:var(--mono);color:var(--ink-3)}
+.etext{white-space:pre-wrap;word-break:break-word;font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{font-size:12px;padding:2px 8px;border-radius:6px;background:var(--paper);color:var(--ink-2);line-height:1.6}
+.chip b{font-weight:600;color:var(--ink);margin-right:4px}
+.chip.block{background:var(--warn-soft);color:var(--warn)}
+.chip.block b{color:var(--warn)}
+.chip.solved{background:var(--pen-soft);color:var(--pen);text-decoration:line-through;text-decoration-thickness:1px}
+.chip.solved b{color:var(--pen);text-decoration:none}
+.chip.idea b{color:var(--gold)}
+
+/* signature: margin note */
+.note{margin-top:12px;padding:10px 0 2px 14px;border-left:2px solid var(--pen);position:relative}
+.note .who{font-size:11px;letter-spacing:2px;color:var(--pen);margin-bottom:2px;font-family:var(--sans)}
+.note .txt{font-family:var(--hand);color:var(--pen);font-size:17px;line-height:1.75;white-space:pre-wrap}
+.note.wait .txt{color:var(--ink-3)}
+.note.err{border-color:var(--warn)}
+.note.err .txt,.note.err .who{color:var(--warn);font-family:var(--sans);font-size:13px}
+.thread{margin-top:8px}
+.note.light{padding-top:6px}
+.note.light .who{display:none}
+.quiet{margin-top:10px;font-size:12px;color:var(--ink-3)}
+.quiet button{color:var(--pen);font-size:12px}
+.opener{background:var(--sheet);border:1px solid var(--rule);border-radius:14px;padding:14px 16px 12px;margin:4px 0 12px;position:relative}
+.opener .who{font-size:11px;letter-spacing:2px;color:var(--pen);margin-bottom:4px}
+.opener .txt{font-family:var(--hand);color:var(--pen);font-size:18px;line-height:1.75;white-space:pre-wrap}
+.opener.wait .txt{color:var(--ink-3)}
+.opener .acts{display:flex;gap:16px;margin-top:8px;font-size:13px}
+.opener .acts button{color:var(--pen)}
+.opener .acts button.sub2{color:var(--ink-3)}
+.seg button.auto{border-style:dashed}
+.seg button.auto.on{border-style:solid}
+.toggle{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:14px;color:var(--ink-2);cursor:pointer}
+.toggle input{width:18px;height:18px;accent-color:var(--pen)}
+.seg-card{border:1px solid var(--rule);border-radius:12px;padding:10px 12px;margin-bottom:10px;background:#fff}
+.seg-card textarea{width:100%;border:none;outline:none;resize:vertical;min-height:64px;line-height:1.7;background:transparent}
+.seg-card .seg{margin-top:6px}
+.seg-card .seg button{padding:4px 10px;font-size:12px}
+.seg-card .why{font-size:12px;color:var(--ink-3);margin-bottom:4px}
+.seg-card.drop{opacity:.45}
+.thread .me{font-size:14px;color:var(--ink);background:var(--paper);border-radius:8px;padding:6px 10px;margin:8px 0 0 auto;width:fit-content;max-width:88%;white-space:pre-wrap}
+.eacts{display:flex;gap:16px;margin-top:10px;font-size:12px}
+.eacts button{color:var(--ink-2);padding:4px 0}
+.eacts button:hover{color:var(--pen)}
+.replybox{display:flex;gap:8px;margin-top:8px}
+.replybox input{flex:1;border:1px solid var(--rule);border-radius:8px;padding:7px 10px;background:#fff}
+.replybox button{background:var(--pen);color:#fff;border-radius:8px;padding:0 14px;font-size:13px}
+
+/* lists */
+.item{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start}
+.item .ck{width:20px;height:20px;border:1.5px solid var(--warn);border-radius:5px;flex:none;margin-top:2px;display:grid;place-items:center;color:#fff;font-size:12px}
+.item.done .ck{background:var(--pen);border-color:var(--pen)}
+.item.done .it{color:var(--ink-3);text-decoration:line-through}
+.item .it{flex:1;font-size:14px}
+.item .from{font-size:12px;color:var(--ink-3);display:flex;align-items:center;gap:5px;margin-top:2px}
+.empty{text-align:center;color:var(--ink-2);padding:36px 12px;font-size:14px}
+.empty .hand{font-family:var(--hand);font-size:19px;color:var(--ink);display:block;margin-bottom:6px}
+
+/* project detail */
+.phead{background:var(--sheet);border:1px solid var(--rule);border-radius:14px;padding:16px;position:relative;overflow:hidden}
+.phead::before{content:"";position:absolute;left:0;top:0;right:0;height:5px;background:var(--c)}
+.phead h2{font-size:22px;margin-top:4px}
+.phead .goal{color:var(--ink-2);font-size:14px;margin-top:4px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.stat{background:var(--paper);border-radius:8px;padding:8px 10px}
+.stat .n{font-family:var(--mono);font-size:17px;font-weight:600}
+.stat .l{font-size:11px;color:var(--ink-2)}
+.memo{margin-top:12px;font-family:var(--hand);color:var(--pen);font-size:15px;border-top:1px dashed var(--rule);padding-top:10px}
+.memo span{font-family:var(--sans);font-size:11px;letter-spacing:2px;display:block;color:var(--ink-3)}
+.back{font-size:14px;color:var(--ink-2);padding:18px 2px 10px;display:inline-block}
+.prow{display:flex;gap:14px;margin-top:12px;font-size:13px}
+.prow button{color:var(--pen)}
+
+/* fab + nav */
+.fab{position:fixed;right:max(18px,calc(50% - 262px));bottom:calc(76px + env(safe-area-inset-bottom));background:var(--ink);color:var(--sheet);border-radius:999px;padding:12px 20px;font-size:15px;font-weight:600;box-shadow:0 6px 18px rgba(29,39,51,.25);display:flex;gap:6px;align-items:center;z-index:20}
+.fab span{font-family:var(--hand);font-size:18px;font-weight:400}
+nav{position:fixed;left:0;right:0;bottom:0;background:rgba(247,249,251,.94);backdrop-filter:blur(10px);border-top:1px solid var(--rule);padding-bottom:env(safe-area-inset-bottom);z-index:15}
+nav .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+nav button{padding:10px 0 9px;font-size:12px;color:var(--ink-3);display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
+nav button i{font-style:normal;font-size:17px;line-height:1}
+nav button.on{color:var(--ink);font-weight:600}
+nav .badge{position:absolute;top:6px;left:calc(50% + 6px);background:var(--warn);color:#fff;border-radius:999px;font-size:10px;padding:0 5px;line-height:15px;font-weight:600}
+
+/* sheet modal */
+.mask{position:fixed;inset:0;background:rgba(29,39,51,.35);z-index:30;display:none;align-items:flex-end;justify-content:center}
+.mask.show{display:flex}
+.sheet{background:var(--sheet);width:100%;max-width:560px;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto;animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(30px);opacity:.4}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet{animation:none}}
+.sheet h3{font-size:17px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.sheet h3 button{font-size:14px;color:var(--ink-3);font-weight:400}
+label.f{display:block;font-size:12px;color:var(--ink-2);margin:12px 0 5px;letter-spacing:1px}
+.inp,textarea.inp,select.inp{width:100%;border:1px solid var(--rule);background:#fff;border-radius:10px;padding:10px 12px;outline:none}
+.inp:focus{border-color:var(--pen)}
+textarea.inp{min-height:150px;resize:vertical;line-height:1.7;background:#fff repeating-linear-gradient(transparent 0 26.5px,#EDF1F4 26.5px 27.5px);background-attachment:local;background-position:0 9px}
+.hint{font-size:12px;color:var(--ink-3);margin-top:6px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.colors{display:flex;gap:10px;flex-wrap:wrap}
+.colors button{width:30px;height:30px;border-radius:50%;background:var(--c);border:3px solid transparent}
+.colors button.on{border-color:var(--ink)}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg button{padding:6px 12px;border:1px solid var(--rule);border-radius:999px;font-size:13px;background:#fff;display:flex;align-items:center;gap:6px}
+.seg button.on{background:var(--ink);color:var(--sheet);border-color:var(--ink)}
+.primary{width:100%;margin-top:18px;background:var(--ink);color:var(--sheet);border-radius:12px;padding:13px;font-weight:600;font-size:16px}
+.primary:disabled{opacity:.4}
+.ghost{width:100%;margin-top:10px;border:1px solid var(--rule);border-radius:12px;padding:11px;font-size:14px;color:var(--ink-2);background:#fff}
+.danger{color:var(--warn)}
+.card{background:var(--sheet);border:1px solid var(--rule);border-radius:12px;padding:14px;margin-bottom:12px}
+.card p{font-size:13px;color:var(--ink-2)}
+.persona{display:grid;gap:8px}
+.persona button{text-align:left;border:1px solid var(--rule);border-radius:10px;padding:10px 12px;background:#fff}
+.persona button.on{border-color:var(--pen);background:var(--pen-soft)}
+.persona b{display:block;font-size:14px}
+.persona small{color:var(--ink-2);font-size:12px}
+.toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:var(--ink);color:var(--sheet);padding:8px 16px;border-radius:999px;font-size:13px;z-index:50;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+.review{background:var(--sheet);border:1px solid var(--rule);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.review .rt{font-family:var(--mono);font-size:12px;color:var(--ink-3);margin-bottom:6px}
+.review .txt{font-family:var(--hand);color:var(--pen);font-size:16px;line-height:1.8;white-space:pre-wrap}
+.entry::before{background:var(--bar,var(--c))}
+.pns{display:flex;flex-wrap:wrap;gap:4px 12px}
+.ehead .pns .pn{font-weight:600;color:var(--ink);display:flex;align-items:center;gap:6px}
+.chip .dot{display:inline-block;width:6px;height:6px;margin-right:4px;vertical-align:middle}
+.rate{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:12px;font-family:var(--sans)}
+.rate button{color:var(--ink-2);font-size:12px;padding:4px 10px;border:1px solid var(--rule);border-radius:999px;background:#fff}
+.rate button.on{color:#fff;background:var(--pen);border-color:var(--pen);font-weight:600}
+.rate button.on.bad{background:var(--warn);border-color:var(--warn)}
+.rate .why{color:var(--ink-3)}
+.reasons{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.reasons button{font-size:12px;padding:3px 10px;border:1px solid var(--rule);border-radius:999px;background:#fff;color:var(--ink-2)}
+.memo{white-space:pre-wrap;line-height:1.75}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<button class="fab" id="fab" aria-label="写一笔">＋ <span>写一笔</span></button>
+<nav><div class="in" id="nav"></div></nav>
+<div class="mask" id="mask"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ 常量 ============ */
+const KEY='xmsj_v1';
+const COLORS=['#3E6FB0','#2F8F7A','#C0603A','#8A5BB5','#C79A24','#4F5D6E','#C2457A','#6C8F2E'];
+const CATS=['工作','爱好','学习','副业','生活','其他'];
+const TYPES={progress:'进展',gain:'收获',cost:'付出',blocker:'磕绊',idea:'灵感',note:'其他'};
+const MOODS={good:'不错',neutral:'平稳',low:'有点低落',very_low:'很低落'};
+const TONES={
+  soft:{label:'温柔',line:'- 可以好奇、可以开玩笑；有不同看法时说得很委婉，先肯定再提。不说教、不催促、不评判。'},
+  mid:{label:'适中',line:'- 可以好奇、可以开玩笑、可以温和地提出不同看法；不说教、不催促、不评判。'},
+  direct:{label:'直接',line:'- 可以好奇、可以开玩笑；看到问题就直接指出来，不绕弯子，但底色是支持。不说教、不催促、不评判。'}
+};
+const BAD_REASONS=['太长','夸得空','没说到点上','不想要建议','记错了','太像套路'];
+const PRESETS={
+  deepseek:{label:'DeepSeek',base:'https://api.deepseek.com',model:'deepseek-flash'},
+  qwen:{label:'通义千问',base:'https://dashscope.aliyuncs.com/compatible-mode/v1',model:'qwen-plus'},
+  kimi:{label:'Kimi',base:'https://api.moonshot.cn/v1',model:'moonshot-v1-8k'},
+  custom:{label:'自定义',base:'',model:''}
+};
+const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const DAY=864e5;
+
+/* ============ 数据层 ============ */
+function blank(){return {v:3,projects:[],logs:[],blockers:[],reviews:[],feedback:[],opener:null,
+  settings:{preset:'deepseek',base:PRESETS.deepseek.base,model:PRESETS.deepseek.model,key:'',aiName:'小记',nick:'',tone:'mid'}};}
+function load(){
+  let d=null;try{d=JSON.parse(localStorage.getItem(KEY));}catch(e){}
+  if(!d||!d.projects)return blank();
+  return d.v===3?fixup(d):migrate(d);
+}
+function fixup(d){const b=blank();d.settings={...b.settings,...d.settings};['logs','blockers','reviews','feedback'].forEach(k=>d[k]=d[k]||[]);
+  d.projects.forEach(p=>{p.followUps=p.followUps||[];p.profiling=false;});return d;}
+function migrate(d){
+  const n=blank();const os=d.settings||{};
+  Object.assign(n.settings,{preset:os.preset||'deepseek',base:os.base||n.settings.base,model:os.model==='deepseek-chat'?'deepseek-flash':(os.model||n.settings.model),key:os.key||'',nick:os.nick||''});
+  n.projects=(d.projects||[]).map(p=>({id:p.id,name:p.name,desc:p.goal||'',cat:p.cat||'其他',color:p.color||COLORS[0],created:p.created||Date.now(),archived:!!p.archived,
+    profile:p.summary||'',profileTs:p.summary?Date.now():0,followUps:[],lastAsked:0,spendAlerted:''}));
+  const moodMap={'开心':'good','兴奋':'good','平稳':'neutral','疲惫':'low','焦虑':'low','沮丧':'low'};
+  (d.entries||[]).forEach(e=>{
+    const a=e.ai||{};const items=[];
+    const add=(type,content,x={})=>items.push({id:uid('i'),pid:e.pid,type,content,minutes:null,money:null,resolves:null,mentions:null,...x});
+    (a.progress||[]).forEach(t=>add('progress',t));(a.gain||[]).forEach(t=>add('gain',t));(a.ideas||[]).forEach(t=>add('idea',t));
+    (a.blocks||[]).forEach(b=>{const id=b.id||uid('b');add('blocker',b.text,{blockerId:id});
+      n.blockers.push({id,pid:e.pid,content:b.text,solved:!!b.solved,first:e.ts,last:e.ts,solvedTs:b.solvedTs||null,logId:e.id});});
+    if(e.minutes||e.money)add('cost','投入',{minutes:e.minutes||null,money:e.money||null});
+    if(!items.length)add('note',String(e.text||'').slice(0,60));
+    const ok=e.status==='done';
+    n.logs.push({id:e.id,ts:e.ts,raw:e.text,items,mood:moodMap[a.mood]||'neutral',mode:e.quiet?'log_only':'normal',forcePid:null,
+      reply:a.reply||'',status:ok?'done':'error',stage:'split',err:ok?'':'旧版本里没完成的记录，点「重试」。',thread:e.thread||[]});
+  });
+  n.reviews=(d.reviews||[]).filter(r=>r.status==='done').map(r=>({...r,week:weekKey(r.ts)}));
+  return n;
+}
+let S=load();
+function save(){localStorage.setItem(KEY,JSON.stringify(S));}
+const P=id=>S.projects.find(p=>p.id===id);
+const B=id=>S.blockers.find(b=>b.id===id);
+const L=id=>S.logs.find(l=>l.id===id);
+const activeProjects=()=>S.projects.filter(p=>!p.archived);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const dkey=t=>{const d=new Date(t);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());};
+const hm=t=>{const d=new Date(t);return pad(d.getHours())+':'+pad(d.getMinutes());};
+const daysAgo=t=>Math.round((new Date(dkey(Date.now()))-new Date(dkey(t)))/DAY);
+const WEEK='日一二三四五六';
+function dayLabel(k){const n=daysAgo(k);const w='周'+WEEK[new Date(k).getDay()];return n===0?'今天 · '+w:n===1?'昨天 · '+w:k.slice(5).replace('-','月')+'日 · '+w;}
+function fmtMin(m){if(!m)return '0h';const h=m/60;return h>=10?Math.round(h)+'h':(Math.round(h*10)/10)+'h';}
+function fmtMoney(v){if(!v)return '¥0';return '¥'+(v>=10000?(Math.round(v/1000)/10)+'万':Math.round(v));}
+function weekKey(t){const d=new Date(t);d.setHours(0,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return dkey(d);}
+function weekStart(t){const d=new Date(t);d.setHours(0,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return d.getTime();}
+const logPids=l=>[...new Set((l.items||[]).map(i=>i.pid).filter(id=>id&&P(id)))];
+
+function projStats(pid){
+  let min=0,money=0,last=0,count=0;
+  S.logs.forEach(l=>{if(l.status==='confirm')return;const its=l.items.filter(i=>i.pid===pid);if(!its.length)return;count++;last=Math.max(last,l.ts);
+    its.forEach(i=>{min+=+i.minutes||0;money+=+i.money||0;});});
+  return {count,min,money,last,open:S.blockers.filter(b=>b.pid===pid&&!b.solved).length};
+}
+function sumRange(pid,from,to){let min=0,money=0;S.logs.forEach(l=>{if(l.ts<from||l.ts>=to||l.status==='confirm')return;
+  l.items.forEach(i=>{if(i.pid===pid){min+=+i.minutes||0;money+=+i.money||0;}});});return {min,money};}
+function allIdeas(){const r=[];S.logs.forEach(l=>l.items.forEach(i=>{if(i.type==='idea'&&i.pid)r.push({text:i.content,pid:i.pid,ts:l.ts});}));return r.sort((a,b)=>b.ts-a.ts);}
+
+/* ============ AI 基础 ============ */
+async function chat(messages,temperature=0.7){
+  const st=S.settings;
+  if(!st.key)throw new Error('还没有填写 API Key，到「设置」里填一下就能收到回应。');
+  const base=st.base.replace(/\/+$/,'');
+  const url=/\/chat\/completions$/.test(base)?base:base+'/chat/completions';
+  const body={model:st.model,messages,temperature};
+  if(/deepseek\.com/.test(base))body.thinking={type:'disabled'};
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+st.key},body:JSON.stringify(body)});
+  if(!r.ok){let t='';try{t=(await r.json()).error?.message||'';}catch(e){}throw new Error('AI 接口返回 '+r.status+(t?'：'+t:'')+'。检查 Key、模型名和余额。');}
+  const j=await r.json();return (j.choices?.[0]?.message?.content||'').trim();
+}
+function parseJSON(t){
+  t=t.replace(/```json|```/g,'').trim();
+  const a=t.indexOf('{'),b=t.lastIndexOf('}');
+  if(a<0||b<0)throw new Error('AI 返回格式不对，点「重试」再试一次。');
+  return JSON.parse(t.slice(a,b+1));
+}
+function persona(){
+  const st=S.settings;const nm=st.aiName||'小记';
+  return `你是"${nm}"，用户的项目伙伴。${st.nick?`你称呼用户为"${st.nick}"。`:''}用户同时在推进好几个项目（工作、爱好、副业、学习），每天会把进展、收获、付出、磕绊和灵感随手记给你。
+
+【你是谁】
+- 一个记得 TA 所有项目来龙去脉的老朋友，不是老师、教练或客服。
+- 你真正提供的是"被关注"：TA 写了，就有人认真看了、记住了、接住了。
+
+【说话方式】
+- 像微信聊天：口语、简短，不用标题和列表，不堆表情符号。
+- 具体胜过空泛：引用 TA 说过的细节、数字、上次的情况；不说"加油""你真棒"这类空话。
+- 夸要夸到点上：指出哪一步难、和之前比哪里变了；不夸大。
+- 建议最多一条，并且只在 TA 卡住或主动问时给。
+${TONES[st.tone||'mid'].line}
+
+【底线】
+- 不编造 TA 没说过的事。记不清就直说，或者问 TA。
+- TA 情绪明显低落时，只陪伴，不分析、不给方案。
+- 如果 TA 流露出伤害自己的念头，认真关心 TA，并建议 TA 联系身边信任的人或专业帮助。
+- 提到钱和时间时，只陈述事实，问一句是否在计划内，不评判 TA 的选择。`;
+}
+function profilesText(pids){return pids.map(id=>{const p=P(id);return p?`「${p.name}」（${p.desc||p.cat}）\n${p.profile||'（档案还是空的）'}`:'';}).filter(Boolean).join('\n\n')||'（无）';}
+function openBlockersText(pids){
+  const bs=S.blockers.filter(b=>!b.solved&&(!pids||pids.includes(b.pid))&&P(b.pid));
+  return bs.map(b=>`- [${b.id}] 「${P(b.pid).name}」${b.content}（已持续 ${daysAgo(b.first)} 天，最近一次提到是 ${daysAgo(b.last)} 天前）`).join('\n')||'（无）';
+}
+function feedbackText(){
+  const fb=[...S.feedback].sort((a,b)=>b.ts-a.ts);
+  const bad=fb.filter(f=>f.v==='bad').slice(0,5),good=fb.filter(f=>f.v==='good'&&f.reason).slice(0,3);
+  if(!bad.length&&!good.length)return '';
+  return '\n【TA 对你过去回应的评价，请据此调整】\n'+bad.map(f=>`- 不喜欢：「${f.text.slice(0,50)}」原因：${f.reason||'没说'}`).join('\n')+(good.length?'\n'+good.map(f=>`- 喜欢：「${f.text.slice(0,50)}」原因：${f.reason}`).join('\n'):'');
+}
+
+/* ============ 提示词① 拆分 ============ */
+async function aiSplit(l){
+  const act=activeProjects();
+  const projects=act.map(p=>({id:p.id,name:p.name,desc:p.desc||p.cat}));
+  const open=S.blockers.filter(b=>!b.solved&&P(b.pid)&&!P(b.pid).archived).map(b=>({id:b.id,project_id:b.pid,content:b.content}));
+  const sys=persona()+`
+
+任务：把用户今天的一段记录拆成结构化条目。只输出 JSON，不要任何解释。
+
+【规则】
+1. 一段话可能涉及多个项目，按项目拆开。一个项目也可以拆成多条。
+2. 每条的 type 只能是：progress 进展 / gain 收获 / cost 付出 / blocker 磕绊 / idea 灵感 / note 其他
+3. content 用一句话复述用户原意，保留关键细节和数字，不润色、不添加。
+4. 时间和金钱只在用户明确说出时填写："两个半小时"→150，"花了380"→380；"一下午""挺贵的"这类不确定的填 null。时间和金钱可以填在对应的那条上，不必单独拆一条 cost。
+5. 如果用户说某个问题解决了，并且能对上未解决磕绊里的某一条，填 resolves_blocker_id。
+6. 如果用户又提到某个未解决磕绊、但没有解决（比如"还是报错""还没搞定"），填 mentions_blocker_id，这条的 type 用 blocker，代码会更新原磕绊，不会重复新建。
+7. 对不上任何项目的内容：像是新项目就填 new_project_suggestion，否则 project_id 填 null。
+8. 任何一处拿不准，needs_confirm 设为 true，并在 question 里用一句话问用户（口吻用你的人设）。
+9. mood 判断整段话的情绪：good / neutral / low / very_low。${l.forcePid?`
+10. 用户已经指定这段记录属于项目 ${l.forcePid}，所有条目的 project_id 都填它，不要建议新项目，也不用为归属问题确认。`:''}
+
+【输出格式】
+{"items":[{"project_id":"p1或null","new_project_suggestion":"名称或null","type":"progress","content":"……","time_minutes":数字或null,"money_yuan":数字或null,"resolves_blocker_id":"id或null","mentions_blocker_id":"id或null"}],"mood":"neutral","needs_confirm":false,"question":null}`;
+  const user=`今天：${dkey(l.ts)}（周${WEEK[new Date(l.ts).getDay()]}）
+项目列表：${JSON.stringify(projects)}
+未解决磕绊：${JSON.stringify(open)}
+用户原文：${l.raw}`;
+  const out=parseJSON(await chat([{role:'system',content:sys},{role:'user',content:user}],0.2));
+  const ids=new Set(act.map(p=>p.id)),openIds=new Set(open.map(b=>b.id));
+  const num=v=>v===null||v===undefined||v===''||isNaN(+v)?null:+v;
+  let items=(out.items||[]).filter(i=>i&&i.content).map(i=>{
+    let pid=l.forcePid||(ids.has(i.project_id)?i.project_id:null);
+    const sug=!pid&&i.new_project_suggestion?String(i.new_project_suggestion).slice(0,20):null;
+    const res=openIds.has(i.resolves_blocker_id)?i.resolves_blocker_id:null;
+    const men=!res&&openIds.has(i.mentions_blocker_id)?i.mentions_blocker_id:null;
+    return {id:uid('i'),pid,suggest:sug,type:TYPES[i.type]?i.type:'note',content:String(i.content),minutes:num(i.time_minutes),money:num(i.money_yuan),resolves:res,mentions:men};
+  });
+  if(!items.length)items=[{id:uid('i'),pid:l.forcePid||null,suggest:null,type:'note',content:l.raw.slice(0,80),minutes:null,money:null,resolves:null,mentions:null}];
+  return {items,mood:MOODS[out.mood]?out.mood:'neutral',needsConfirm:!!out.needs_confirm,question:out.question||''};
+}
+
+/* ============ 一条记录的流程 ============ */
+async function runLog(l){
+  undoLog(l);
+  l.status='splitting';l.stage='split';l.err='';l.reply='';save();render();
+  try{
+    const r=await aiSplit(l);
+    Object.assign(l,{items:r.items,mood:r.mood,question:r.question});
+    if(r.needsConfirm||l.items.some(i=>!i.pid)){l.status='confirm';save();render();openConfirm(l.id);return;}
+    await commitLog(l);
+  }catch(err){l.status='error';l.err=err.message||String(err);save();render();}
+}
+async function commitLog(l){
+  // 新项目建议 → 创建项目
+  const made={};
+  l.items.forEach(i=>{if(typeof i.pid==='string'&&i.pid.startsWith('new:')){const name=i.pid.slice(4);
+    if(!made[name]){const p=newProject({name});made[name]=p.id;}i.pid=made[name];}});
+  l.items=l.items.filter(i=>i.pid&&P(i.pid));
+  if(!l.items.length){S.logs=S.logs.filter(x=>x.id!==l.id);save();render();toast('没有要存的内容');return;}
+  applyBlockers(l);
+  l.spendAlert=spendAlert(l);
+  l.status='replying';l.stage='reply';save();render();
+  await replyLog(l);
+  updateProfiles(logPids(l),l);
+}
+function applyBlockers(l){
+  l.items.forEach(i=>{
+    if(i.resolves){const b=B(i.resolves);if(b&&!b.solved){b.solved=true;b.solvedTs=l.ts;b.solvedBy=l.id;b.last=l.ts;}}
+    else if(i.mentions){const b=B(i.mentions);if(b){b.prevLast=b.last;b.last=l.ts;}}
+    else if(i.type==='blocker'){const b={id:uid('b'),pid:i.pid,content:i.content,solved:false,first:l.ts,last:l.ts,logId:l.id};S.blockers.push(b);i.blockerId=b.id;}
+  });
+}
+function undoLog(l){
+  S.blockers=S.blockers.filter(b=>b.logId!==l.id);
+  S.blockers.forEach(b=>{if(b.solvedBy===l.id){b.solved=false;b.solvedTs=null;b.solvedBy=null;}});
+}
+function spendAlert(l){
+  const d=new Date(l.ts);const m0=new Date(d.getFullYear(),d.getMonth(),1).getTime(),m1=new Date(d.getFullYear(),d.getMonth()+1,1).getTime(),mp=new Date(d.getFullYear(),d.getMonth()-1,1).getTime();
+  const mk=dkey(m0).slice(0,7);const out=[];
+  logPids(l).forEach(pid=>{
+    const p=P(pid);if(!l.items.some(i=>i.pid===pid&&i.money))return;if(p.spendAlerted===mk)return;
+    const cur=sumRange(pid,m0,m1).money,prev=sumRange(pid,mp,m0).money;
+    if((prev>0&&cur>prev*1.5&&cur-prev>=200)||(prev===0&&cur>=500)){p.spendAlerted=mk;out.push(`本月「${p.name}」已花费 ${Math.round(cur)} 元，上月 ${Math.round(prev)} 元`);}
+  });
+  return out.join('；');
+}
+
+/* ============ 提示词② 回应 ============ */
+async function replyLog(l){
+  const pids=logPids(l);
+  const exception=l.mode==='log_only'&&l.mood==='very_low';
+  l.exception=exception;
+  if(l.mode==='log_only'&&!exception){l.reply='记下了。';l.status='done';save();render();return;}
+  const recent=S.logs.filter(x=>x.id!==l.id&&x.ts<l.ts&&x.status==='done'&&logPids(x).some(id=>pids.includes(id))).sort((a,b)=>b.ts-a.ts).slice(0,8).reverse();
+  const mode=exception?'log_only（但 TA 今天情绪很低：破例只回一句轻轻的陪伴，不超过 30 字，不给方案，不追问）':l.mode;
+  const sys=persona()+`
+
+任务：回应用户今天的记录。直接输出要发给 TA 的话，不要任何前缀。
+
+【先判断这条记录的分量，再决定怎么回】
+优先级：情绪低落 > 新磕绊 > 解决了旧磕绊 / 明显进展 > 灵感 > 普通记录。
+- 普通的一笔（小进展、记个账）：一句话，接住即可。
+- 明显进展，或解决了旧磕绊：1～3 句。点出和之前比的变化，比如"上周卡了三天的那个"。
+- 新磕绊：2～4 句。先承认它磨人，再问一个能帮 TA 理清的问题，或者给一条思路，二选一。
+- 同一个磕绊持续 3 天以上：可以提议换个角度，但只提一次。
+- 情绪低落（mood 为 low / very_low）：1～3 句，只陪伴，不给方案，不转移话题去夸进展。
+- 灵感：1～2 句，接住它，再追问一个让它更具体的问题。
+- 投入提示不为空：用一句话陈述事实，问是否在计划内。
+- 涉及多个项目：挑最值得说的一两个，不必每个都回。
+- 模式为 log_only：只回"记下了"或一个很短的确认。
+
+【记忆的用法】
+- 每次回应最多引用一处过去的内容，并且必须来自输入里的档案或记录。
+- 不要每次都说"上次你提到"，只在过去和现在形成对比或呼应时用。
+
+【长度和措辞】
+- 总长度不超过 120 字，大多数时候远少于此。
+- 不用列表、标题、引号框。
+- 不重复最近记录里你已经说过的夸奖句式。${feedbackText()}`;
+  const user=`现在：${dkey(l.ts)} 周${WEEK[new Date(l.ts).getDay()]} ${hm(l.ts)}
+项目档案：
+${profilesText(pids)}
+最近记录：
+${recent.map(x=>`- ${dkey(x.ts)}｜${logPids(x).map(id=>P(id).name).join('、')}｜${x.raw.slice(0,150)}${x.reply&&x.reply!=='记下了。'?'｜你当时回：'+x.reply.slice(0,60):''}`).join('\n')||'（无）'}
+未解决磕绊：
+${openBlockersText(pids)}
+今天拆分结果：${JSON.stringify(l.items.map(i=>({project:P(i.pid)?.name,type:i.type,content:i.content,time_minutes:i.minutes,money_yuan:i.money,resolved:i.resolves?B(i.resolves)?.content:undefined,mentioned_again:i.mentions?B(i.mentions)?.content:undefined})))}
+情绪：${l.mood}
+今天原文：${l.raw}
+投入提示：${l.spendAlert||'（无）'}
+模式：${mode}`;
+  try{l.reply=(await chat([{role:'system',content:sys},{role:'user',content:user}],0.8)).replace(/^["“]|["”]$/g,'');l.status='done';l.err='';}
+  catch(err){l.status='error';l.stage='reply';l.err=err.message||String(err);}
+  save();render();
+}
+
+/* ============ 提示词③ 档案 ============ */
+async function updateProfiles(pids,l){
+  for(const pid of pids){
+    const p=P(pid);if(!p)continue;p.profiling=true;render();
+    const sys=persona()+`
+
+任务：根据今天的新记录，更新这个项目的档案。只输出 JSON。
+
+【档案固定分为六段，每段 1～3 句，每段以编号和小标题开头，段与段之间换行】
+1. 这是什么：项目是什么，TA 想达到什么（TA 说过才写）。
+2. 现在走到哪：当前阶段，最近一次实质进展。
+3. 一路的关键节点：最多 5 条，按时间排列，带日期，新的节点挤掉最不重要的旧节点。
+4. TA 的投入方式：习惯在什么时候做、大致频率（金额总数由代码统计，这里不写数字）。
+5. 反复出现的模式：反复卡的地方、反复冒出的念头。没有就写"暂无"。
+6. 值得回访：TA 说过"下周要……""打算……"的事，以及值得过几天问一句的事。
+
+【规则】
+- 旧档案里仍然成立的保留，过时的删掉，矛盾的以今天为准。
+- 只写 TA 说过的，不推测动机、不给评价。
+- 档案全文不超过 400 字。
+- 另外把第 6 段整理成 follow_ups 列表：每条一句话，due_date 按 TA 说的时间推算（"明天"→明天，"周末"→本周六，"下周"→下周一）；说"过几天"或没说时间的，填今天之后第 3 天；已经做完或过时的不要再列。最多 5 条。
+
+【输出格式】
+{"profile":"1. 这是什么：……\\n2. 现在走到哪：……\\n……","follow_ups":[{"content":"……","due_date":"YYYY-MM-DD"}]}`;
+    const user=`今天：${dkey(Date.now())}（周${WEEK[new Date().getDay()]}）
+项目：${p.name}，${p.desc||p.cat}
+旧档案：${p.profile||'（空，这是第一次）'}
+今天的条目：${JSON.stringify(l.items.filter(i=>i.pid===pid).map(i=>({type:i.type,content:i.content,time_minutes:i.minutes,money_yuan:i.money})))}
+今天原文：${l.raw}
+未解决磕绊：
+${openBlockersText([pid])}
+现有的待回访：${JSON.stringify(p.followUps.filter(f=>!f.done).map(f=>({content:f.content,due_date:f.due})))}`;
+    try{
+      const out=parseJSON(await chat([{role:'system',content:sys},{role:'user',content:user}],0.3));
+      if(out.profile){p.profile=String(out.profile).slice(0,700);p.profileTs=Date.now();}
+      if(Array.isArray(out.follow_ups)){
+        const done=p.followUps.filter(f=>f.done).slice(-10);
+        p.followUps=[...done,...out.follow_ups.filter(f=>f&&f.content).slice(0,5).map(f=>({id:uid('f'),content:String(f.content),
+          due:/^\d{4}-\d\d-\d\d$/.test(f.due_date||'')?f.due_date:dkey(Date.now()+3*DAY),done:false,created:Date.now()}))];
+      }
+      p.profileErr='';
+    }catch(err){p.profileErr=err.message||String(err);}
+    p.profiling=false;save();render();
+  }
+}
+
+/* ============ 提示词④ 开场关心 ============ */
+function openerCandidates(){
+  const c=[],today=dkey(Date.now());
+  activeProjects().forEach(p=>{
+    if(p.lastAsked&&daysAgo(p.lastAsked)<3)return;
+    const st=projStats(p.id);const n=daysAgo(st.last||p.created);
+    if(n>=7)c.push({pid:p.id,project:p.name,kind:'stale',detail:st.last?`${n} 天没有记录了`:`建了 ${n} 天还没写过`,days:n});
+    S.blockers.filter(b=>b.pid===p.id&&!b.solved&&daysAgo(b.last)>=3).forEach(b=>c.push({pid:p.id,project:p.name,kind:'blocker',detail:b.content,days:daysAgo(b.first),ref:b.id}));
+    p.followUps.filter(f=>!f.done&&f.due<=today).forEach(f=>c.push({pid:p.id,project:p.name,kind:'follow_up',detail:f.content,days:daysAgo(f.created),ref:f.id}));
+  });
+  return c.slice(0,8);
+}
+const KIND={stale:'很久没更新',blocker:'没解决的磕绊',follow_up:'TA 说过要做的事'};
+async function makeOpener(force){
+  const today=dkey(Date.now());
+  if(!S.settings.key||!activeProjects().length)return;
+  if(!force&&S.opener&&S.opener.day===today&&S.opener.status!=='error')return;
+  const c=openerCandidates();
+  if(!c.length){S.opener={day:today,status:'skip'};save();render();return;}
+  S.opener={day:today,status:'pending'};save();render();
+  const sys=persona()+`
+
+任务：用户刚打开小程序。从候选话题里最多挑一个，主动跟 TA 说一句话。
+
+【规则】
+- 只说一件事，不超过 40 字。
+- 语气是关心，不是催：问近况，不问"为什么没做"。
+- 久未更新的项目，可以给 TA 一个台阶，比如"暂时放一放也没关系"。
+- 候选都不值得说，或候选为空，就只输出：<skip>
+【输出格式】先写所选候选的编号，再空格写你要说的话，例如：[2] 上周说的……
+不说就只输出 <skip>${feedbackText()}`;
+  const user=`现在：${today} 周${WEEK[new Date().getDay()]} ${hm(Date.now())}
+候选话题：
+${c.map((x,i)=>`[${i+1}] 「${x.project}」${KIND[x.kind]}：${x.detail}（${x.days} 天）`).join('\n')}
+相关项目档案：
+${profilesText([...new Set(c.map(x=>x.pid))])}`;
+  try{
+    const t=await chat([{role:'system',content:sys},{role:'user',content:user}],0.9);
+    if(/<skip>/i.test(t)||!t.replace(/\[\d+\]/,'').trim())S.opener={day:today,status:'skip'};
+    else{
+      const m=t.match(/\[(\d+)\]/);const cand=c[m?+m[1]-1:0]||c[0];
+      const text=t.replace(/^\s*\[\d+\]\s*/,'').replace(/^["“]|["”]$/g,'').trim();
+      S.opener={id:uid('o'),day:today,status:'done',text,pid:cand.pid,kind:cand.kind,ref:cand.ref||null};
+      const p=P(cand.pid);if(p)p.lastAsked=Date.now();
+    }
+  }catch(err){S.opener={day:today,status:'error',text:err.message};}
+  save();render();
+}
+
+/* ============ 周报 ============ */
+async function weeklyReview(auto){
+  const now=Date.now(),from=weekStart(now),prevFrom=from-7*DAY,wk=weekKey(now);
+  const es=S.logs.filter(l=>l.ts>=from&&l.status==='done').sort((a,b)=>a.ts-b.ts);
+  if(!es.length){if(!auto)toast('这周还没有记录');return;}
+  S.reviews=S.reviews.filter(r=>r.week!==wk);
+  const rv={id:uid('r'),ts:now,week:wk,text:'',status:'pending'};S.reviews.unshift(rv);save();render();
+  const stats=activeProjects().map(p=>{const a=sumRange(p.id,from,now+1),b=sumRange(p.id,prevFrom,from);const n=es.filter(l=>logPids(l).includes(p.id)).length;
+    return `- 「${p.name}」本周 ${n} 条记录，时间 ${fmtMin(a.min)}（上周 ${fmtMin(b.min)}），花费 ${Math.round(a.money)} 元（上周 ${Math.round(b.money)} 元）`;}).join('\n');
+  const ideas=es.flatMap(l=>l.items.filter(i=>i.type==='idea').map(i=>`- 「${P(i.pid)?.name}」${i.content}`)).join('\n');
+  const sys=persona()+`
+
+任务：给用户写这一周的复盘，像朋友帮 TA 回顾，不是绩效考核。
+
+【结构，写成连贯的几段话，不用标题】
+1. 一句话总结这一周。
+2. 本周活跃的项目，各 1～2 句：做成了什么，投入多少。
+3. 本周没动的项目，合起来一句带过，不批评。
+4. 拖得最久的一两个磕绊，问一句还要不要继续处理。
+5. 挑一个本周的灵感，再提一次。
+6. 以一个关于下周的轻问题结尾。
+
+【规则】
+- 全文不超过 400 字。
+- 数字只用输入里给的，不自己计算。${feedbackText()}`;
+  const user=`本周（${wk} 起）记录：
+${es.map(l=>`- ${dkey(l.ts)}｜${logPids(l).map(id=>P(id).name).join('、')}｜${l.raw.slice(0,160)}`).join('\n')}
+各项目档案：
+${profilesText(activeProjects().map(p=>p.id))}
+投入统计：
+${stats}
+未解决磕绊：
+${openBlockersText(null)}
+本周灵感：
+${ideas||'（无）'}`;
+  try{rv.text=await chat([{role:'system',content:sys},{role:'user',content:user}],0.7);rv.status='done';}
+  catch(err){rv.status='error';rv.text=err.message;}
+  save();render();
+}
+function maybeAutoReview(){
+  const d=new Date();if(d.getDay()!==0||d.getHours()<18||!S.settings.key)return;
+  if(S.reviews.some(r=>r.week===weekKey(Date.now())&&r.status!=='error'))return;
+  weeklyReview(true);
+}
+
+/* ============ 接着聊 ============ */
+async function followUp(l,text){
+  const pids=logPids(l);
+  l.thread=l.thread||[];l.thread.push({role:'user',text,ts:Date.now()});l.replying=true;save();render();
+  const msgs=[{role:'system',content:persona()+'\n\n你在和用户接着聊 TA 的一条记录。像微信聊天一样接话，1～3 句，不超过 100 字。\n项目档案：\n'+profilesText(pids)+'\n未解决磕绊：\n'+openBlockersText(pids)+feedbackText()},
+    {role:'user',content:l.raw},{role:'assistant',content:l.reply||'记下了。'}];
+  l.thread.forEach(m=>msgs.push({role:m.role==='user'?'user':'assistant',content:m.text}));
+  try{l.thread.push({role:'ai',text:await chat(msgs,0.8),ts:Date.now()});}
+  catch(err){l.thread.push({role:'ai',text:'（没回上：'+err.message+'）',ts:Date.now(),err:true});}
+  l.replying=false;save();render();
+}
+
+/* ============ 反馈 ============ */
+function setRating(ref,kind,text,v){
+  const f=S.feedback.find(x=>x.ref===ref);
+  if(f&&f.v===v){S.feedback=S.feedback.filter(x=>x.ref!==ref);}
+  else if(f){f.v=v;f.reason='';f.ts=Date.now();}
+  else S.feedback.push({ref,kind,text,v,reason:'',ts:Date.now()});
+  save();render();
+}
+const rating=ref=>S.feedback.find(x=>x.ref===ref);
+function ratingRow(ref,kind){
+  const f=rating(ref);
+  let h=`<div class="rate"><button class="${f?.v==='good'?'on':''}" data-rate="${ref}|${kind}|good">好</button><button class="${f?.v==='bad'?'on bad':''}" data-rate="${ref}|${kind}|bad">不好</button>`;
+  if(f?.reason)h+=`<span class="why">· ${esc(f.reason)}</span>`;
+  h+='</div>';
+  if(f&&!f.reason&&V.reasonFor===ref){
+    const opts=f.v==='bad'?BAD_REASONS:['问到点上了','很具体','语气舒服','被安慰到'];
+    h+=`<div class="reasons">${opts.map(r=>`<button data-reason="${ref}|${r}">${r}</button>`).join('')}</div><form class="replybox" data-reasonform="${ref}"><input name="t" placeholder="或者写半句原因（可不填）" autocomplete="off"><button>记下</button></form>`;
+  }
+  return h;
+}
+
+/* ============ 导出 ============ */
+function download(text,name,type){const b=new Blob([text],{type:type+';charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);}
+function toMarkdown(){
+  const nm=S.settings.aiName||'小记';
+  const out=[`# 项目手记`,``,`导出于 ${dkey(Date.now())} ${hm(Date.now())} · ${S.projects.length} 个项目 · ${S.logs.length} 条记录`,``];
+  S.projects.forEach(p=>{
+    const st=projStats(p.id);
+    out.push(`---`,``,`## ${p.name}${p.archived?'（已归档）':''}`,``,`- 类别：${p.cat}`,`- 开始：${dkey(p.created)}`);
+    if(p.desc)out.push(`- 描述：${p.desc}`);
+    out.push(`- 累计：${st.count} 条记录 · ${fmtMin(st.min)} · ${fmtMoney(st.money)}`,``);
+    if(p.profile)out.push(`### ${nm}的档案`,``,p.profile,``);
+    const bs=S.blockers.filter(b=>b.pid===p.id);
+    if(bs.length){out.push(`### 磕绊`,``);bs.forEach(b=>out.push(`- [${b.solved?'x':' '}] ${b.content}（${dkey(b.first)} 首次${b.solved&&b.solvedTs?'，'+dkey(b.solvedTs)+' 解决':'，最近提到 '+dkey(b.last)}）`));out.push(``);}
+    const fu=p.followUps.filter(f=>!f.done);
+    if(fu.length){out.push(`### 待回访`,``);fu.forEach(f=>out.push(`- ${f.content}（${f.due}）`));out.push(``);}
+    const ls=S.logs.filter(l=>logPids(l).includes(p.id)).sort((a,b)=>a.ts-b.ts);
+    if(ls.length)out.push(`### 记录`,``);
+    let last='';
+    ls.forEach(l=>{const k=dkey(l.ts);if(k!==last){out.push(`#### ${k} 周${WEEK[new Date(l.ts).getDay()]}`,``);last=k;}
+      const others=logPids(l).filter(id=>id!==p.id).map(id=>P(id).name);
+      out.push(`**${hm(l.ts)}**${l.mood&&l.mood!=='neutral'?` · 状态：${MOODS[l.mood]}`:''}${others.length?` · 同时涉及：${others.join('、')}`:''}`,``,l.raw,``);
+      l.items.filter(i=>i.pid===p.id).forEach(i=>out.push(`- ${TYPES[i.type]}：${i.content}${i.minutes?` · ${i.minutes} 分钟`:''}${i.money?` · ${i.money} 元`:''}`));
+      out.push(``);
+      if(l.reply)out.push(`> ${nm}：${l.reply.replace(/\n/g,'\n> ')}`,``);
+      (l.thread||[]).forEach(m=>out.push(m.role==='user'?`> 我：${m.text}`:`> ${nm}：${m.text}`,`>`));
+      if((l.thread||[]).length)out.push(``);
+    });
+  });
+  const rs=S.reviews.filter(r=>r.status==='done');
+  if(rs.length){out.push(`---`,``,`## 每周复盘`,``);rs.forEach(r=>out.push(`### ${r.week||dkey(r.ts)} 这一周`,``,r.text,``));}
+  return out.join('\n');
+}
+
+/* ============ 视图 ============ */
+let V={tab:'home',pid:null,filter:'all',replyOpen:null,listTab:'blocks',reasonFor:null};
+const $=s=>document.querySelector(s);
+function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove('show'),1800);}
+const AN=()=>esc(S.settings.aiName||'小记');
+
+function render(){
+  const a=$('#app');
+  if(V.tab==='project'&&P(V.pid))a.innerHTML=viewProject();
+  else if(V.tab==='projects')a.innerHTML=viewProjects();
+  else if(V.tab==='lists')a.innerHTML=viewLists();
+  else if(V.tab==='settings')a.innerHTML=viewSettings();
+  else {V.tab='home';a.innerHTML=viewHome();}
+  const openN=S.blockers.filter(b=>!b.solved&&P(b.pid)).length;
+  const navs=[['home','✎','手记'],['projects','▦','项目'],['lists','◇','清单'],['settings','⚙','设置']];
+  const cur=V.tab==='project'?'projects':V.tab;
+  $('#nav').innerHTML=navs.map(([k,i,l])=>`<button class="${cur===k?'on':''}" data-nav="${k}"><i>${i}</i>${l}${k==='lists'&&openN?`<span class="badge">${openN}</span>`:''}</button>`).join('');
+  $('#fab').style.display=V.tab==='settings'?'none':'flex';
+}
+function header(title,sub){const d=new Date();
+  return `<div class="top"><h1>${title}</h1><div class="date">${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())}<br>周${WEEK[d.getDay()]}</div></div>${sub?`<p class="sub">${sub}</p>`:''}`;}
+function greet(){const h=new Date().getHours();return h<6?'夜深了':h<11?'早上好':h<14?'中午好':h<18?'下午好':'晚上好';}
+
+function openerCard(){
+  const op=S.opener;if(!op||op.day!==dkey(Date.now())||op.dismissed)return '';
+  if(op.status==='pending')return `<div class="opener wait"><div class="who">${AN()}</div><div class="txt">翻了翻你的本子……</div></div>`;
+  if(op.status!=='done')return '';
+  let acts=`<button data-act="compose${op.pid?':'+op.pid:''}">回它一笔</button>`;
+  if(op.kind==='blocker'&&B(op.ref)&&!B(op.ref).solved)acts+=`<button data-solveop="${op.ref}">已经解决了</button>`;
+  if(op.kind==='follow_up')acts+=`<button data-fudone="${op.ref}">做过了</button><button data-fudrop="${op.ref}">不用了</button>`;
+  acts+=`<button class="sub2" data-act="dismissop">知道了</button>`;
+  return `<div class="opener"><div class="who">${AN()}</div><div class="txt">${esc(op.text)}</div><div class="acts">${acts}</div>${ratingRow(op.id,'opener')}</div>`;
+}
+function viewHome(){
+  if(!S.projects.length)return header('项目手记')+`<div class="empty" style="padding-top:60px"><span class="hand">${greet()}，先建一个项目吧</span>工作、爱好、副业、想学的东西，都可以算一个项目。<br>之后每天写一笔，${AN()}会在旁边回你。<button class="primary" data-act="newproj" style="max-width:240px">新建第一个项目</button></div>`;
+  const act=activeProjects();
+  const wrote=S.logs.some(l=>daysAgo(l.ts)===0);
+  let h=header('项目手记',`${greet()}${S.settings.nick?'，'+esc(S.settings.nick):''}。在做的项目有 ${act.length} 个${wrote?'。':'，今天还没写。'}`);
+  if(!S.settings.key)h+=`<div class="nudge"><div class="hand">还没接上 AI。到「设置」里填一下 API Key，${AN()}才能回你。</div><button data-nav="settings">去设置</button></div>`;
+  h+=openerCard();
+  const pend=S.logs.filter(l=>l.status==='confirm');
+  pend.forEach(l=>h+=`<div class="nudge"><div class="hand">有一条记录等你确认：${esc(l.question||'有几段不确定归到哪个项目')}</div><button data-confirm="${l.id}">去确认</button></div>`);
+  h+=`<div class="tabs" style="margin-top:14px"><button class="tab ${V.filter==='all'?'on':''}" data-filter="all">全部</button>${act.map(p=>`<button class="tab ${V.filter===p.id?'on':''}" data-filter="${p.id}"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</button>`).join('')}</div>`;
+  const ls=S.logs.filter(l=>V.filter==='all'||logPids(l).includes(V.filter)||(l.forcePid===V.filter&&!l.items.length)).sort((a,b)=>b.ts-a.ts);
+  if(!ls.length)h+=`<div class="empty"><span class="hand">这里还空着</span>点右下角「写一笔」，几个项目混着写也行。</div>`;
+  h+=timeline(ls.slice(0,60));
+  h+=`<div class="sec"><h2>每周复盘</h2><button data-act="review">生成本周复盘</button></div>`;
+  h+=S.reviews.slice(0,3).map(reviewCard).join('')||`<p class="sub">周日 18 点后第一次打开时，${AN()}会自动帮你回顾这一周。</p>`;
+  return h;
+}
+function reviewCard(r){
+  return `<div class="review"><div class="rt">${r.week||dkey(r.ts)} 这一周</div><div class="txt" style="${r.status==='error'?'color:var(--warn);font-family:var(--sans);font-size:13px':''}">${r.status==='pending'?'正在翻你这一周的本子……':esc(r.text)}</div>${r.status==='done'?ratingRow(r.id,'review'):''}${r.status!=='pending'?`<div class="eacts"><button data-delrev="${r.id}">删除</button></div>`:''}</div>`;
+}
+function timeline(ls){let h='',last='';ls.forEach(l=>{const k=dkey(l.ts);if(k!==last){h+=`<div class="day">${dayLabel(k)}</div>`;last=k;}h+=logCard(l);});return h;}
+
+function itemChip(i,multi){
+  const p=P(i.pid);const dot=multi&&p?`<span class="dot" style="background:${p.color}"></span>`:'';
+  const money=`${i.minutes?` · ${fmtMin(i.minutes)}`:''}${i.money?` · ${fmtMoney(i.money)}`:''}`;
+  if(i.resolves){const b=B(i.resolves);return `<span class="chip solved">${dot}<b>解决了</b>${esc(b?b.content:i.content)}${money}</span>`;}
+  if(i.mentions){const b=B(i.mentions);return `<span class="chip block">${dot}<b>又卡了</b>${esc(b?b.content:i.content)}${b&&!b.solved?` · 第 ${daysAgo(b.first)+1} 天`:''}${money}</span>`;}
+  if(i.type==='blocker'){const b=B(i.blockerId);return `<span class="chip ${b&&b.solved?'solved':'block'}">${dot}<b>${b&&b.solved?'已解决':'磕绊'}</b>${esc(i.content)}${money}</span>`;}
+  return `<span class="chip ${i.type==='idea'?'idea':''}">${dot}<b>${TYPES[i.type]}</b>${esc(i.content)}${money}</span>`;
+}
+function logCard(l){
+  const pids=logPids(l);const ps=pids.map(P);
+  const first=ps[0]||(l.forcePid&&P(l.forcePid))||{name:'待归类',color:'#97A1AD'};
+  const multi=ps.length>1;
+  const names=ps.length?ps.map(p=>`<span class="pn"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</span>`).join(''):`<span class="pn"><span class="dot" style="background:${first.color}"></span>${esc(first.name)}</span>`;
+  const bar=multi?`linear-gradient(${ps.map((p,i)=>`${p.color} ${i*100/ps.length}% ${(i+1)*100/ps.length}%`).join(',')})`:first.color;
+  let chips='';
+  if(l.status!=='splitting'&&l.status!=='confirm')l.items.forEach(i=>chips+=itemChip(i,multi));
+  if(l.mood==='low'||l.mood==='very_low')chips+=`<span class="chip"><b>状态</b>${MOODS[l.mood]}</span>`;
+  let note='';
+  if(l.status==='splitting')note=`<div class="note wait"><div class="txt">${AN()}正在整理……</div></div>`;
+  else if(l.status==='confirm')note=`<div class="note"><div class="who">${AN()}想确认一下</div><div class="txt">${esc(l.question||'有几段不确定归到哪个项目。')}</div><div class="eacts" style="margin-top:6px"><button style="color:var(--pen)" data-confirm="${l.id}">去确认</button></div></div>`;
+  else if(l.status==='replying')note=`<div class="note wait"><div class="txt">${AN()}在看……</div></div>`;
+  else if(l.status==='error')note=`<div class="note err"><div class="who">没收到回应</div><div class="txt">${esc(l.err)}</div></div>`;
+  else if(l.mode==='log_only'&&!l.exception)note=`<div class="quiet">只记录 · 记下了 · <button data-askai="${l.id}">想听听${AN()}怎么说</button></div>`;
+  else if(l.reply)note=`<div class="note${l.reply.length<=40?' light':''}"><div class="who">${AN()}${l.exception?' · 只记录模式，看你今天挺累，多说了一句':''}</div><div class="txt">${esc(l.reply)}</div>${ratingRow(l.id,'reply')}</div>`;
+  if(l.spendAlert&&l.status==='done')chips+=`<span class="chip block"><b>投入提示</b>${esc(l.spendAlert)}</span>`;
+  let th='';
+  (l.thread||[]).forEach(m=>th+=m.role==='user'?`<div class="me">${esc(m.text)}</div>`:`<div class="note${m.err?' err':''}" style="margin-top:8px"><div class="txt">${esc(m.text)}</div></div>`);
+  if(l.replying)th+=`<div class="note wait" style="margin-top:8px"><div class="txt">……</div></div>`;
+  const rb=V.replyOpen===l.id?`<form class="replybox" data-reply="${l.id}"><input name="t" placeholder="回一句……" autocomplete="off" required><button>发送</button></form>`:'';
+  const busy=['splitting','replying'].includes(l.status);
+  return `<article class="entry" style="--c:${first.color};--bar:${bar}">
+  <div class="ehead"><span class="pns">${names}</span><span class="tm">${hm(l.ts)}</span></div>
+  <div class="etext">${esc(l.raw)}</div>
+  ${chips?`<div class="chips">${chips}</div>`:''}
+  ${note}${th?`<div class="thread">${th}</div>`:''}${rb}
+  ${busy?'':`<div class="eacts">${l.status==='done'?`<button data-replyopen="${l.id}">接着聊</button><button data-rereply="${l.id}">换个回应</button>`:''}${l.status==='error'?`<button style="color:var(--pen)" data-retry="${l.id}">重试</button>`:''}<button data-edit="${l.id}">编辑</button><button data-del="${l.id}">删除</button></div>`}
+  </article>`;
+}
+
+function viewProjects(){
+  const act=activeProjects(),arc=S.projects.filter(p=>p.archived);
+  let h=header('我的项目',`点开项目看它的时间线、投入，和${AN()}给它记的档案。`);
+  h+=`<div class="pgrid">${act.map(pcard).join('')}<button class="pcard add" data-act="newproj">＋ 新建项目</button></div>`;
+  if(arc.length)h+=`<div class="sec"><h2>已归档</h2></div><div class="pgrid">${arc.map(pcard).join('')}</div>`;
+  return h;
+}
+function pcard(p){const st=projStats(p.id);const n=st.last?daysAgo(st.last):null;
+  return `<button class="pcard" style="--c:${p.color}" data-open="${p.id}"><span class="cat">${esc(p.cat)}</span><span class="nm">${esc(p.name)}</span>
+  <span class="meta">${st.count} 条 · ${fmtMin(st.min)} · ${fmtMoney(st.money)}<br>${n===null?'还没写过':`<span class="${n>=7?'stale':''}">${n===0?'今天更新':n+' 天前更新'}</span>`}${st.open?` · <span class="stale">${st.open} 个磕绊</span>`:''}</span></button>`;}
+function viewProject(){
+  const p=P(V.pid);const st=projStats(p.id);
+  const ls=S.logs.filter(l=>logPids(l).includes(p.id)).sort((a,b)=>b.ts-a.ts);
+  const open=S.blockers.filter(b=>b.pid===p.id&&!b.solved).sort((a,b)=>a.first-b.first);
+  const fu=p.followUps.filter(f=>!f.done).sort((a,b)=>a.due<b.due?-1:1);
+  const ideas=allIdeas().filter(i=>i.pid===p.id);
+  let h=`<button class="back" data-nav="projects">← 全部项目</button>`;
+  h+=`<div class="phead" style="--c:${p.color}"><div class="cat" style="font-size:12px;color:var(--ink-3)">${esc(p.cat)} · 始于 ${dkey(p.created)}${p.archived?' · 已归档':''}</div><h2>${esc(p.name)}</h2>${p.desc?`<div class="goal">${esc(p.desc)}</div>`:''}
+  <div class="stats"><div class="stat"><div class="n">${st.count}</div><div class="l">条记录</div></div><div class="stat"><div class="n">${fmtMin(st.min)}</div><div class="l">投入时间</div></div><div class="stat"><div class="n">${fmtMoney(st.money)}</div><div class="l">投入金钱</div></div></div>
+  <div class="memo"><span>${AN()}的档案${p.profileTs?' · '+dkey(p.profileTs)+' 更新':''}${p.profiling?' · 正在更新…':''}</span>${p.profile?esc(p.profile):'<em style="color:var(--ink-3);font-style:normal">写几笔之后，这里会有一份关于这个项目的档案。</em>'}${p.profileErr?`<div class="hint" style="color:var(--warn)">上次档案没更新成功：${esc(p.profileErr)}</div>`:''}</div>
+  <div class="prow"><button data-act="compose:${p.id}">写一笔</button><button data-editproj="${p.id}">编辑项目</button><button data-arch="${p.id}">${p.archived?'恢复':'归档'}</button></div></div>`;
+  if(fu.length)h+=`<div class="sec"><h2>${AN()}打算回访（${fu.length}）</h2></div>`+fu.map(fuItem).join('');
+  if(open.length)h+=`<div class="sec"><h2>还没解决（${open.length}）</h2></div>`+open.map(blockItem).join('');
+  if(ideas.length)h+=`<div class="sec"><h2>灵感（${ideas.length}）</h2></div>`+ideas.slice(0,8).map(ideaItem).join('');
+  h+=`<div class="sec"><h2>时间线</h2></div>`;
+  h+=ls.length?timeline(ls):`<div class="empty"><span class="hand">还没写过</span>写下第一笔：为什么开始这个项目？</div>`;
+  return h;
+}
+function blockItem(b){const p=P(b.pid)||{name:'',color:'#999'};
+  return `<div class="item ${b.solved?'done':''}"><button class="ck" data-toggle="${b.id}" aria-label="标记解决">${b.solved?'✓':''}</button><div style="flex:1"><div class="it">${esc(b.content)}</div><div class="from"><span class="dot" style="background:${p.color}"></span>${esc(p.name)} · ${b.solved?`${dkey(b.first)} → ${dkey(b.solvedTs||b.last)} 解决`:`已 ${daysAgo(b.first)} 天${b.last!==b.first?` · ${daysAgo(b.last)===0?'今天':daysAgo(b.last)+' 天前'}又提到`:''}`}</div></div></div>`;}
+function ideaItem(i){const p=P(i.pid)||{name:'',color:'#999'};
+  return `<div class="item"><span style="color:var(--gold);font-size:15px;line-height:1.5">✦</span><div style="flex:1"><div class="it">${esc(i.text)}</div><div class="from"><span class="dot" style="background:${p.color}"></span>${esc(p.name)} · ${dkey(i.ts)}</div></div><button style="font-size:12px;color:var(--pen)" data-idea2proj="${esc(i.text)}">变成项目</button></div>`;}
+function fuItem(f){const p=S.projects.find(x=>x.followUps.includes(f))||{name:'',color:'#999'};const due=f.due<=dkey(Date.now());
+  return `<div class="item"><span style="color:var(--pen);font-size:14px;line-height:1.6">↺</span><div style="flex:1"><div class="it">${esc(f.content)}</div><div class="from"><span class="dot" style="background:${p.color}"></span>${esc(p.name)} · ${due?'<span style="color:var(--warn)">该问了</span>':f.due.slice(5).replace('-','月')+'日后问'}</div></div><button style="font-size:12px;color:var(--ink-3)" data-fudone="${f.id}">做过了</button><button style="font-size:12px;color:var(--ink-3);margin-left:8px" data-fudrop="${f.id}">不用了</button></div>`;}
+
+function viewLists(){
+  const bs=S.blockers.filter(b=>P(b.pid));const open=bs.filter(b=>!b.solved).sort((a,b)=>a.first-b.first),done=bs.filter(b=>b.solved).sort((a,b)=>(b.solvedTs||0)-(a.solvedTs||0));
+  const ideas=allIdeas();const fus=activeProjects().flatMap(p=>p.followUps.filter(f=>!f.done)).sort((a,b)=>a.due<b.due?-1:1);
+  let h=header('清单','所有项目里的磕绊、灵感和待回访，都汇到这里。');
+  h+=`<div class="tabs"><button class="tab ${V.listTab==='blocks'?'on':''}" data-ltab="blocks">磕绊 ${open.length}</button><button class="tab ${V.listTab==='ideas'?'on':''}" data-ltab="ideas">灵感 ${ideas.length}</button><button class="tab ${V.listTab==='fu'?'on':''}" data-ltab="fu">待回访 ${fus.length}</button><button class="tab ${V.listTab==='done'?'on':''}" data-ltab="done">已解决 ${done.length}</button></div><div style="height:10px"></div>`;
+  if(V.listTab==='blocks')h+=open.map(blockItem).join('')||`<div class="empty"><span class="hand">眼下没有卡住的事</span>写记录时提到的困难，会自动出现在这里。</div>`;
+  if(V.listTab==='done')h+=done.map(blockItem).join('')||`<div class="empty">解决掉的磕绊会留在这里，回头看挺有成就感。</div>`;
+  if(V.listTab==='ideas')h+=ideas.map(ideaItem).join('')||`<div class="empty"><span class="hand">灵感池还是空的</span>天马行空的想法也写进记录里，${AN()}会帮你收好。</div>`;
+  if(V.listTab==='fu')h+=fus.map(fuItem).join('')||`<div class="empty">你说过"打算……""下周要……"的事，${AN()}会记在这里，到时候问你一句。</div>`;
+  return h;
+}
+function viewSettings(){
+  const st=S.settings;const good=S.feedback.filter(f=>f.v==='good').length,bad=S.feedback.filter(f=>f.v==='bad').length;
+  return header('设置')+`
+  <div class="card"><h3 style="font-size:15px;margin-bottom:4px">AI 服务</h3><p>数据只存在这台设备的浏览器里，写记录时才会把相关内容发给你选的 AI 服务。Key 也只保存在本机。</p>
+  <label class="f">服务商</label><div class="seg">${Object.entries(PRESETS).map(([k,v])=>`<button class="${st.preset===k?'on':''}" data-preset="${k}">${v.label}</button>`).join('')}</div>
+  <label class="f">接口地址</label><input class="inp" id="s_base" value="${esc(st.base)}" placeholder="https://api.example.com/v1">
+  <label class="f">模型名</label><input class="inp" id="s_model" value="${esc(st.model)}" placeholder="deepseek-flash">
+  <label class="f">API Key</label><input class="inp" id="s_key" type="password" value="${esc(st.key)}" placeholder="sk-…" autocomplete="off">
+  <button class="primary" data-act="savecfg">保存</button><button class="ghost" data-act="testcfg">测试连接</button></div>
+  <div class="card"><h3 style="font-size:15px;margin-bottom:4px">你的伙伴</h3><p>一个记得你所有项目的老朋友：先接住，再说话，说话要具体。</p>
+  <div class="row2"><div><label class="f">它叫什么</label><input class="inp" id="s_ainame" value="${esc(st.aiName)}" placeholder="小记" maxlength="8" data-setting="aiName"></div>
+  <div><label class="f">它怎么称呼你</label><input class="inp" id="s_nick" value="${esc(st.nick)}" placeholder="可不填" maxlength="10" data-setting="nick"></div></div>
+  <label class="f">说话风格</label><div class="seg">${Object.entries(TONES).map(([k,v])=>`<button class="${(st.tone||'mid')===k?'on':''}" data-tone="${k}">${v.label}</button>`).join('')}</div>
+  <p class="hint">温柔：不同看法说得很委婉；适中：可以温和地提不同看法；直接：看到问题直接指出。</p>
+  <label class="f">你给过的评价</label><p>好 ${good} 次 · 不好 ${bad} 次。最近 5 条"不好"的原因会带进每次回应，让它慢慢调整。</p>
+  ${S.feedback.length?'<button class="ghost" data-act="clearfb">清空评价记录</button>':''}</div>
+  <div class="card"><h3 style="font-size:15px;margin-bottom:4px">备份</h3><p>清理浏览器数据会把记录一起清掉。建议隔段时间导出一次。</p>
+  <button class="ghost" data-act="exportmd">导出全部为文本（Markdown）</button><button class="ghost" data-act="export">导出备份（JSON，可恢复）</button><button class="ghost" data-act="import">从备份恢复</button><input type="file" id="impfile" accept=".json" hidden>
+  <button class="ghost danger" data-act="wipe">清空全部数据</button></div>
+  <p class="sub" style="text-align:center">共 ${S.projects.length} 个项目 · ${S.logs.length} 条记录 · 数据版本 v3</p>`;
+}
+
+/* ============ 弹层 ============ */
+function openSheet(html){$('#sheet').innerHTML=html;$('#mask').classList.add('show');}
+function closeSheet(){$('#mask').classList.remove('show');}
+let draft={};
+function composeSheet(pid,editId){
+  const act=activeProjects();
+  if(!act.length){projSheet();return;}
+  const e=editId?L(editId):null;
+  const ctx=pid||(V.tab==='project'?V.pid:(V.filter!=='all'?V.filter:null));
+  draft={pid:e?(e.forcePid||'auto'):(ctx||(act.length>1?'auto':act[0].id)),editId};
+  openSheet(`<h3>${e?'编辑记录':'写一笔'}<button data-act="close">取消</button></h3>
+  <label class="f">哪个项目</label><div class="seg" id="cpick">${act.length>1?`<button class="auto ${draft.pid==='auto'?'on':''}" data-pick="auto">✦ 让${AN()}分</button>`:''}${act.map(p=>`<button class="${draft.pid===p.id?'on':''}" data-pick="${p.id}"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</button>`).join('')}</div>
+  <label class="f">今天怎么样</label><textarea class="inp" id="ctext" placeholder="随便写：做了什么、学到什么、花了多少时间和钱、卡在哪里、冒出什么想法……几个项目混着写也行。">${esc(e?.raw||'')}</textarea>
+  <div class="hint">说出具体的时间和金额会自动记下，比如"两个半小时""花了 380"。手机上可以用输入法的语音输入。</div>
+  <label class="toggle"><input type="checkbox" id="cquiet" ${e?.mode==='log_only'?'checked':''}> 只记录，不用回</label>
+  <button class="primary" data-act="submit">${e?'保存并重新整理':'写好了'}</button>`);
+  setTimeout(()=>$('#ctext')?.focus(),250);
+}
+let cdraft=null;
+function openConfirm(id){const l=L(id);if(!l)return;cdraft={id,items:l.items.map(i=>({...i}))};renderConfirm();$('#mask').classList.add('show');}
+function renderConfirm(){
+  document.querySelectorAll('[data-citem]').forEach(t=>{const it=cdraft.items[+t.dataset.citem];if(it)it.content=t.value;});
+  const l=L(cdraft.id);const act=activeProjects();
+  const n=cdraft.items.filter(i=>i.pid&&i.pid!=='drop').length,missing=cdraft.items.some(i=>!i.pid);
+  $('#sheet').innerHTML=`<h3>确认一下<button data-act="close">稍后</button></h3>
+  ${l.question?`<div class="note" style="margin:0 0 14px"><div class="who">${AN()}</div><div class="txt">${esc(l.question)}</div></div>`:''}
+  <p class="hint" style="margin:-4px 0 12px">文字可以直接改；点项目名换归属，点「不存」丢掉这一条。</p>
+  ${cdraft.items.map((i,k)=>`<div class="seg-card ${i.pid==='drop'?'drop':''}"><div class="why">${TYPES[i.type]}${i.minutes?` · ${i.minutes} 分钟`:''}${i.money?` · ${i.money} 元`:''}${i.resolves?' · 解决了：'+esc(B(i.resolves)?.content||''):''}${i.mentions?' · 又提到：'+esc(B(i.mentions)?.content||''):''}</div>
+    <textarea data-citem="${k}">${esc(i.content)}</textarea>
+    <div class="seg">${act.map(p=>`<button class="${i.pid===p.id?'on':''}" data-cpick="${k}|${p.id}"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</button>`).join('')}${i.suggest?`<button class="auto ${i.pid==='new:'+i.suggest?'on':''}" data-cpick="${k}|new:${esc(i.suggest)}">＋ 新建「${esc(i.suggest)}」</button>`:''}<button class="${i.pid==='drop'?'on':''}" data-cpick="${k}|drop">不存</button></div></div>`).join('')}
+  ${missing?`<p class="hint" style="color:var(--warn)">还有没选项目的条目。</p>`:''}
+  <button class="primary" data-act="confirmsave" ${missing||!n?'disabled':''}>确认，存 ${n} 条</button>
+  <button class="ghost" data-act="confirmedit">回去改原文</button>`;
+}
+async function saveConfirm(){
+  document.querySelectorAll('[data-citem]').forEach(t=>{cdraft.items[+t.dataset.citem].content=t.value.trim();});
+  const l=L(cdraft.id);if(!l)return;
+  l.items=cdraft.items.filter(i=>i.pid&&i.pid!=='drop'&&i.content);
+  closeSheet();cdraft=null;
+  await commitLog(l);
+}
+let pdraft={};
+function newProject({name,desc='',cat='其他',color}){const p={id:uid('p'),name,desc,cat,color:color||COLORS[S.projects.length%COLORS.length],created:Date.now(),archived:false,profile:'',profileTs:0,followUps:[],lastAsked:0,spendAlerted:''};S.projects.push(p);return p;}
+function projSheet(editId,name){
+  const p=editId?P(editId):null;
+  pdraft={id:editId,color:p?.color||COLORS[S.projects.length%COLORS.length],cat:p?.cat||'工作'};
+  openSheet(`<h3>${p?'编辑项目':'新建项目'}<button data-act="close">取消</button></h3>
+  <label class="f">项目名</label><input class="inp" id="pname" value="${esc(p?.name||name||'')}" placeholder="比如：公众号写作、学吉他、Q4 产品上线" maxlength="20">
+  <label class="f">一句话描述</label><input class="inp" id="pdesc" value="${esc(p?.desc||'')}" placeholder="比如：自学古典吉他，年底前弹会 5 首歌">
+  <div class="hint">写具体一点，${AN()}拆分混写的记录时更不容易分错。</div>
+  <label class="f">类别</label><div class="seg">${CATS.map(c=>`<button class="${pdraft.cat===c?'on':''}" data-pcat="${c}">${c}</button>`).join('')}</div>
+  <label class="f">颜色</label><div class="colors">${COLORS.map(c=>`<button style="--c:${c}" class="${pdraft.color===c?'on':''}" data-pcolor="${c}" aria-label="颜色"></button>`).join('')}</div>
+  <button class="primary" data-act="saveproj">${p?'保存':'创建项目'}</button>
+  ${p?`<button class="ghost danger" data-delproj="${p.id}">删除项目及其全部记录</button>`:''}`);
+}
+function removeLog(l){undoLog(l);S.logs=S.logs.filter(x=>x.id!==l.id);S.feedback=S.feedback.filter(f=>f.ref!==l.id);}
+
+/* ============ 事件 ============ */
+document.addEventListener('click',ev=>{
+  const t=ev.target.closest('button,[data-act]');if(!t)return;
+  const d=t.dataset;
+  if(d.nav){V.tab=d.nav;V.replyOpen=null;render();scrollTo(0,0);return;}
+  if(d.filter){V.filter=d.filter;render();return;}
+  if(d.ltab){V.listTab=d.ltab;render();return;}
+  if(d.open){V.tab='project';V.pid=d.open;render();scrollTo(0,0);return;}
+  if(d.pick){draft.pid=d.pick;document.querySelectorAll('[data-pick]').forEach(b=>b.classList.toggle('on',b.dataset.pick===d.pick));return;}
+  if(d.cpick){const [k,pid]=d.cpick.split('|');cdraft.items[+k].pid=pid;renderConfirm();return;}
+  if(d.confirm){openConfirm(d.confirm);return;}
+  if(d.pcat){pdraft.cat=d.pcat;document.querySelectorAll('[data-pcat]').forEach(b=>b.classList.toggle('on',b.dataset.pcat===d.pcat));return;}
+  if(d.pcolor){pdraft.color=d.pcolor;document.querySelectorAll('[data-pcolor]').forEach(b=>b.classList.toggle('on',b.dataset.pcolor===d.pcolor));return;}
+  if(d.replyopen){V.replyOpen=V.replyOpen===d.replyopen?null:d.replyopen;render();setTimeout(()=>document.querySelector('[data-reply] input')?.focus(),50);return;}
+  if(d.rereply){const l=L(d.rereply);if(l){l.status='replying';render();replyLog(l);}return;}
+  if(d.retry){const l=L(d.retry);if(!l)return;if(l.stage==='reply'&&l.items.length){l.status='replying';render();replyLog(l).then(()=>updateProfiles(logPids(l),l));}else runLog(l);return;}
+  if(d.askai){const l=L(d.askai);if(l){l.mode='normal';l.status='replying';render();replyLog(l);}return;}
+  if(d.edit){composeSheet(null,d.edit);return;}
+  if(d.del){if(confirm('删除这条记录？它带来的磕绊变化也会撤回。')){const l=L(d.del);if(l)removeLog(l);save();render();}return;}
+  if(d.delrev){S.reviews=S.reviews.filter(r=>r.id!==d.delrev);save();render();return;}
+  if(d.rate){const [ref,kind,v]=d.rate.split('|');const src=kind==='reply'?L(ref)?.reply:kind==='opener'?S.opener?.text:S.reviews.find(r=>r.id===ref)?.text;
+    setRating(ref,kind,src||'',v);V.reasonFor=rating(ref)?ref:null;render();return;}
+  if(d.reason){const [ref,r]=d.reason.split('|');const f=rating(ref);if(f){f.reason=r;save();}V.reasonFor=null;render();toast('记下了，下次会注意');return;}
+  if(d.toggle){const b=B(d.toggle);if(b){b.solved=!b.solved;b.solvedTs=b.solved?Date.now():null;b.solvedBy=null;save();render();toast(b.solved?'又解决一个':'已改回未解决');}return;}
+  if(d.solveop){const b=B(d.solveop);if(b){b.solved=true;b.solvedTs=Date.now();S.opener.dismissed=true;save();render();toast('太好了，又解决一个');}return;}
+  if(d.fudone||d.fudrop){const id=d.fudone||d.fudrop;S.projects.forEach(p=>{const f=p.followUps.find(x=>x.id===id);if(f){if(d.fudone)f.done=true;else p.followUps=p.followUps.filter(x=>x.id!==id);}});
+    if(S.opener&&S.opener.ref===id)S.opener.dismissed=true;save();render();toast(d.fudone?'好，记下了':'不再问这件事');return;}
+  if(d.idea2proj){projSheet(null,d.idea2proj.slice(0,20));return;}
+  if(d.editproj){projSheet(d.editproj);return;}
+  if(d.arch){const p=P(d.arch);p.archived=!p.archived;save();render();toast(p.archived?'已归档':'已恢复');return;}
+  if(d.delproj){if(confirm('删除项目会同时删除它的全部记录，确定？')){const id=d.delproj;S.projects=S.projects.filter(p=>p.id!==id);
+    S.logs.forEach(l=>l.items=l.items.filter(i=>i.pid!==id));S.logs=S.logs.filter(l=>l.items.length||l.status!=='done');S.blockers=S.blockers.filter(b=>b.pid!==id);save();closeSheet();V.tab='projects';render();}return;}
+  if(d.preset){const pr=PRESETS[d.preset];S.settings.preset=d.preset;if(d.preset!=='custom'){$('#s_base').value=pr.base;$('#s_model').value=pr.model;}document.querySelectorAll('[data-preset]').forEach(b=>b.classList.toggle('on',b.dataset.preset===d.preset));return;}
+  if(d.tone){S.settings.tone=d.tone;save();render();toast('说话风格：'+TONES[d.tone].label);return;}
+  const act=d.act;if(!act)return;
+  if(act==='close'){closeSheet();return;}
+  if(act==='compose'){composeSheet();return;}
+  if(act.startsWith('compose:')){composeSheet(act.slice(8));return;}
+  if(act==='newproj'){projSheet();return;}
+  if(act==='review'){weeklyReview(false);return;}
+  if(act==='dismissop'){S.opener.dismissed=true;save();render();return;}
+  if(act==='confirmsave'){saveConfirm();return;}
+  if(act==='confirmedit'){const l=L(cdraft.id);composeSheet(null,l.id);return;}
+  if(act==='clearfb'){if(confirm('清空所有评价记录？')){S.feedback=[];save();render();}return;}
+  if(act==='submit'){
+    const raw=$('#ctext').value.trim();if(!raw){toast('先写点什么');return;}
+    const mode=$('#cquiet').checked?'log_only':'normal';const forcePid=draft.pid==='auto'?null:draft.pid;
+    let l=draft.editId?L(draft.editId):null;
+    if(l){undoLog(l);Object.assign(l,{raw,mode,forcePid,items:[],reply:'',thread:[],exception:false});S.feedback=S.feedback.filter(f=>f.ref!==l.id);}
+    else{l={id:uid('e'),ts:Date.now(),raw,mode,forcePid,items:[],mood:'neutral',reply:'',status:'splitting',thread:[]};S.logs.push(l);}
+    save();closeSheet();if(V.tab!=='project')V.tab='home';scrollTo(0,0);runLog(l);return;
+  }
+  if(act==='saveproj'){
+    const name=$('#pname').value.trim();if(!name){toast('给项目起个名字');return;}
+    const desc=$('#pdesc').value.trim();
+    if(pdraft.id){Object.assign(P(pdraft.id),{name,desc,cat:pdraft.cat,color:pdraft.color});}
+    else{const p=newProject({name,desc,cat:pdraft.cat,color:pdraft.color});V.tab='project';V.pid=p.id;}
+    save();closeSheet();render();toast(pdraft.id?'已保存':'项目已创建');return;
+  }
+  if(act==='savecfg'||act==='testcfg'){
+    Object.assign(S.settings,{base:$('#s_base').value.trim(),model:$('#s_model').value.trim(),key:$('#s_key').value.trim()});save();
+    if(act==='savecfg'){toast('已保存');makeOpener(false);return;}
+    toast('测试中…');chat([{role:'user',content:'用一句话（20字内）跟我打个招呼'}]).then(r=>alert('连接成功：\n'+r)).catch(e=>alert(e.message));return;
+  }
+  if(act==='exportmd'){download(toMarkdown(),'项目手记-'+dkey(Date.now())+'.md','text/markdown');return;}
+  if(act==='export'){download(JSON.stringify({...S,settings:{...S.settings,key:''}},null,1),'项目手记备份-'+dkey(Date.now())+'.json','application/json');return;}
+  if(act==='import'){$('#impfile').click();return;}
+  if(act==='wipe'){if(confirm('清空全部项目和记录？此操作不能撤销。')&&confirm('再确认一次：真的清空？')){const st=S.settings;S=blank();S.settings=st;save();render();}return;}
+});
+$('#mask').addEventListener('click',ev=>{if(ev.target.id==='mask')closeSheet();});
+$('#fab').addEventListener('click',()=>composeSheet());
+document.addEventListener('submit',ev=>{const f=ev.target;
+  if(f.dataset.reply){ev.preventDefault();const t=f.t.value.trim();const l=L(f.dataset.reply);if(t&&l){V.replyOpen=null;followUp(l,t);}}
+  if(f.dataset.reasonform){ev.preventDefault();const r=rating(f.dataset.reasonform);if(r){r.reason=f.t.value.trim()||(r.v==='bad'?'没说':'');save();}V.reasonFor=null;render();toast('记下了，下次会注意');}
+});
+document.addEventListener('input',ev=>{const k=ev.target.dataset?.citem;if(k!==undefined&&cdraft)cdraft.items[+k].content=ev.target.value;});
+document.addEventListener('change',ev=>{
+  if(ev.target.id==='impfile'){const f=ev.target.files[0];if(!f)return;f.text().then(t=>{const d=JSON.parse(t);if(!d.projects)throw 0;
+    const key=S.settings.key;S=d.v===3?fixup(d):migrate(d);if(!S.settings.key)S.settings.key=key;save();render();toast('已恢复 '+S.logs.length+' 条记录');}).catch(()=>alert('这个文件不是项目手记的备份。'));}
+  const k=ev.target.dataset?.setting;if(k){S.settings[k]=ev.target.value.trim()||(k==='aiName'?'小记':'');save();render();}
+});
+document.addEventListener('keydown',ev=>{if(ev.key==='Escape')closeSheet();if((ev.metaKey||ev.ctrlKey)&&ev.key==='Enter'&&$('#ctext')&&$('#mask').classList.contains('show'))document.querySelector('[data-act="submit"]')?.click();});
+
+// 启动：恢复中断的请求
+S.logs.forEach(l=>{if(l.status==='splitting'||l.status==='replying'){l.stage=l.status==='replying'?'reply':'split';l.status='error';l.err='上次没等到就关掉了，点「重试」。';}l.replying=false;});
+S.reviews.forEach(r=>{if(r.status==='pending'){r.status='error';r.text='上次没生成完。';}});
+if(S.opener&&S.opener.status==='pending')S.opener=null;
+save();render();
+makeOpener(false);
+maybeAutoReview();
+
+</script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>
