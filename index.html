@@ -1736,8 +1736,8 @@ function viewSettings(){
   <label class="f">你给过的评价</label><p>好 ${good} 次 · 一般 ${mid} 次 · 不好 ${bad} 次。最近几条"不好""一般"的原因会带进每次回应，让它慢慢调整。</p>
   ${S.feedback.length?'<button class="ghost" data-act="clearfb">清空评价记录</button>':''}</div>
   <div class="card"><h3 style="font-size:15px;margin-bottom:4px">备份</h3><p>清理浏览器数据会把记录一起清掉。建议隔段时间导出一次。</p>
-  <button class="ghost" data-act="exportmd">导出全部为文本（Markdown）</button><button class="ghost" data-act="export">导出备份（JSON，可恢复）</button><button class="ghost" data-act="merge">合并另一台手机的备份</button><input type="file" id="mergefile" accept=".json,application/json" hidden>
-  <p class="hint" style="margin:2px 0 10px">两台手机都在记？在 A 手机「导出备份」，发到 B 手机点「合并」；B 再导出一份发回 A 合并，两边就一样了。合并只会加进新的，不会覆盖这台手机上已有的记录；在任一台上删掉的，合并后两边都会删掉。</p>
+  <button class="ghost" data-act="exportmd">导出全部为文本（Markdown）</button><button class="ghost" data-act="export">导出备份（JSON，可恢复）</button><button class="ghost" data-act="merge">合并另一份备份（手机或电脑导出的）</button><input type="file" id="mergefile" accept=".json,application/json" hidden>
+  <p class="hint" style="margin:2px 0 10px">两台手机都在记？可以手机之间互相合并：A「导出备份」发给 B，B 点「合并」，再导出发回 A 合并。也可以在电脑上合：两台手机各导出一份，电脑打开「项目手记」依次合并这两份，再从电脑「导出备份」，发回两台手机各合并一次。合并只会加进新的，不会覆盖这台手机上已有的记录；在任一台上删掉的，合并后两边都会删掉。</p>
   <button class="ghost" data-act="import">从备份恢复（整份替换）</button><input type="file" id="impfile" accept=".json" hidden>
   <button class="ghost danger" data-act="wipe">清空全部数据</button></div>
   <p class="sub" style="text-align:center">共 ${S.projects.length} 个项目 · ${S.logs.length} 条记录 · 数据版本 v3</p>`;
