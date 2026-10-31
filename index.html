@@ -191,7 +191,8 @@ textarea.inp{min-height:150px;resize:vertical;line-height:1.7;background:#fff re
 .rate button{color:var(--ink-2);font-size:12px;padding:4px 10px;border:1px solid var(--rule);border-radius:999px;background:#fff}
 .rate button.on{color:#fff;background:var(--pen);border-color:var(--pen);font-weight:600}
 .rate button.on.bad{background:var(--warn);border-color:var(--warn)}
-.rate .why{color:var(--ink-3)}
+.rate button.on.mid{background:var(--ink-3);border-color:var(--ink-3)}
+.rate .why{color:var(--ink-3);font-size:12px;padding:0;border:0;background:none}
 .reasons{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .reasons button{font-size:12px;padding:3px 10px;border:1px solid var(--rule);border-radius:999px;background:#fff;color:var(--ink-2)}
 .memo{white-space:pre-wrap;line-height:1.75}
@@ -296,6 +297,7 @@ textarea.inp{min-height:150px;resize:vertical;line-height:1.7;background:#fff re
 .cnew button{font-size:13px;padding:6px 10px;border-radius:8px;color:var(--pen);font-weight:600}
 .cnew button[type=button]{color:var(--ink-3);font-weight:400}
 .primary.danger{background:var(--warn)}
+.rvchat{display:inline-flex;align-items:center;gap:4px;margin-top:10px;font-size:13px;color:var(--pen);font-weight:600;border:1px solid var(--pen);border-radius:999px;padding:5px 12px;background:transparent}
 </style>
 </head>
 <body>
@@ -319,6 +321,7 @@ const TONES={
   direct:{label:'直接',line:'- 可以好奇、可以开玩笑；看到问题就直接指出来，不绕弯子，但底色是支持。不说教、不催促、不评判。'}
 };
 const BAD_REASONS=['太长','夸得空','没说到点上','不想要建议','记错了','太像套路'];
+const MID_REASONS=['有点长','太泛了','没什么新东西','还行但不够具体','漏了重要的事'];
 const PRESETS={
   deepseek:{label:'DeepSeek',base:'https://api.deepseek.com',model:'deepseek-flash'},
   qwen:{label:'通义千问',base:'https://dashscope.aliyuncs.com/compatible-mode/v1',model:'qwen-plus'},
@@ -329,14 +332,14 @@ const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const DAY=864e5;
 
 /* ============ 数据层 ============ */
-function blank(){return {v:3,projects:[],logs:[],blockers:[],reviews:[],feedback:[],memory:[],opener:null,
+function blank(){return {v:3,projects:[],logs:[],blockers:[],reviews:[],feedback:[],memory:[],deleted:{},opener:null,
   settings:{preset:'deepseek',base:PRESETS.deepseek.base,model:PRESETS.deepseek.model,key:'',aiName:'小记',nick:'',tone:'mid'}};}
 function load(){
   let d=null;try{d=JSON.parse(localStorage.getItem(KEY));}catch(e){}
   if(!d||!d.projects)return blank();
   return d.v===3?fixup(d):migrate(d);
 }
-function fixup(d){const b=blank();(d.reviews||[]).forEach(r=>{if(!r.kind){r.kind='week';r.period=r.week||weekKey(r.ts);r.seen=true;}});d.settings={...b.settings,...d.settings};['logs','blockers','reviews','feedback','memory'].forEach(k=>d[k]=d[k]||[]);
+function fixup(d){const b=blank();(d.reviews||[]).forEach(r=>{if(!r.kind){r.kind='week';r.period=r.week||weekKey(r.ts);r.seen=true;}});d.settings={...b.settings,...d.settings};['logs','blockers','reviews','feedback','memory'].forEach(k=>d[k]=d[k]||[]);d.deleted=d.deleted||{};
   d.projects.forEach(p=>{p.followUps=p.followUps||[];p.profiling=false;});return d;}
 function migrate(d){
   const n=blank();const os=d.settings||{};
@@ -466,9 +469,10 @@ function openBlockersText(pids){
 }
 function feedbackText(){
   const fb=[...S.feedback].sort((a,b)=>b.ts-a.ts);
-  const bad=fb.filter(f=>f.v==='bad').slice(0,5),good=fb.filter(f=>f.v==='good'&&f.reason).slice(0,3);
-  if(!bad.length&&!good.length)return '';
-  return '\n【TA 对你过去回应的评价，请据此调整】\n'+bad.map(f=>`- 不喜欢：「${f.text.slice(0,50)}」原因：${f.reason||'没说'}`).join('\n')+(good.length?'\n'+good.map(f=>`- 喜欢：「${f.text.slice(0,50)}」原因：${f.reason}`).join('\n'):'');
+  const bad=fb.filter(f=>f.v==='bad').slice(0,5),mid=fb.filter(f=>f.v==='mid'&&f.reason).slice(0,3),good=fb.filter(f=>f.v==='good'&&f.reason).slice(0,3);
+  if(!bad.length&&!good.length&&!mid.length)return '';
+  const tag=f=>f.kind==='review'?'（复盘）':'';
+  return '\n【TA 对你过去回应的评价，请据此调整】\n'+[...bad.map(f=>`- 不喜欢${tag(f)}：「${f.text.slice(0,50)}」原因：${f.reason||'没说'}`),...mid.map(f=>`- 觉得一般${tag(f)}：「${f.text.slice(0,50)}」原因：${f.reason}`),...good.map(f=>`- 喜欢${tag(f)}：「${f.text.slice(0,50)}」原因：${f.reason}`)].join('\n');
 }
 
 /* ============ 提示词① 拆分 ============ */
@@ -944,6 +948,7 @@ ${rvItems(ls,'gain')}
 本月灵感：
 ${rvItems(ls,'idea')}`;
   }
+  const prevChat=rvChatText(kind);if(prevChat)user+=prevChat+'\n（TA 上次回答过的问题，这次别重复问；TA 说过的打算，可以看看这期有没有动静。）';
   try{rv.text=await chat([{role:'system',content:persona()+'\n\n'+task+feedbackText()},{role:'user',content:user}],0.7);rv.status='done';}
   catch(err){rv.status='error';rv.text=err.message;}
   save();render();
@@ -971,6 +976,67 @@ async function checkReviews(){
     }
   }finally{RV_BUSY=false;}
 }
+/* ============ 复盘下面聊几句 ============ */
+async function rvFollowUp(r,text){
+  r.thread=r.thread||[];r.thread.push({role:'user',text,ts:Date.now()});r.replying=true;r.seen=true;save();render();
+  const [from,to]=periodRange(r.kind,r.period);const ls=logsIn(from,to);const pids=[...new Set(ls.flatMap(logPids))];
+  const nm={day:'今天',week:'这周',month:'这个月'}[r.kind];
+  const msgs=[{role:'system',content:persona()+`\n\n你刚给用户写了${nm}的复盘，TA 在下面回你。像微信聊天一样接话，1～3 句，不超过 100 字：
+- 先回应 TA 说的，具体到 TA 提到的事；TA 回答了复盘结尾的问题，就顺着聊下去。
+- TA 纠正了你（比如你记错了、漏了），直接认、改口，不辩解。
+- 可以追问一句，但不是每次都问；TA 显然想结束（"好""嗯""知道了"），就简短收尾。
+${nm}涉及的项目档案：\n`+profilesText(pids)+'\n未解决磕绊：\n'+openBlockersText(pids)+feedbackText()},
+    {role:'user',content:`（${periodLabel(r.kind,r.period)} 的记录摘要）\n`+ls.slice(-15).map(l=>`- ${dkey(l.ts)}｜${logPids(l).map(id=>P(id).name).join('、')}｜${rawOf(l).slice(0,80)}`).join('\n')+`\n\n帮我写一下${nm}的复盘。`},
+    {role:'assistant',content:r.text}];
+  r.thread.filter(m=>m.role!=='memo'&&!m.err).forEach(m=>msgs.push({role:m.role==='user'?'user':'assistant',content:m.text}));
+  let ok=false;
+  try{r.thread.push({role:'ai',text:await chat(msgs,0.8),ts:Date.now()});ok=true;}
+  catch(err){r.thread.push({role:'ai',text:'（没回上：'+err.message+'）',ts:Date.now(),err:true});}
+  r.replying=false;save();render();
+  if(ok)rvDigest(r,pids);
+}
+// 复盘里聊到的计划、决定、对自己的认识 → 记进档案 / 关于你
+async function rvDigest(r,pids){
+  const t=r.thread||[];const from=r.digested||0;const part=t.slice(from).filter(m=>m.role!=='memo'&&!m.err);
+  if(!part.some(m=>m.role==='user')||!S.settings.key)return;
+  const sys=personaLite()+`
+
+任务：用户在复盘下面和你聊了几句。找出值得记住的新信息。只输出 JSON。
+1. updates：涉及某个项目的新事实、计划、决定（比如"下周想把重心放在吉他上""烘焙先放一放"），每条写明 project（照抄项目名）和 note（一句话）。没有就空数组。
+2. follow_ups：TA 说了下次要做的事，写明 project、content、due_date（YYYY-MM-DD，按 TA 说的时间推算，没说就填 3 天后）。
+3. about_me_add：关于 TA 本人的长期信息（偏好、节奏、价值观），只记明确说出、以后都该用上的；about_me_remove：被 TA 推翻的旧条目（照抄）。
+4. noted：一句话告诉 TA 你记下了什么（≤30 字）；没有新信息就空字符串。
+{"updates":[{"project":"","note":""}],"follow_ups":[{"project":"","content":"","due_date":""}],"about_me_add":[],"about_me_remove":[],"noted":""}`;
+  const user=`今天：${dkey(Date.now())}
+项目：${activeProjects().map(p=>p.name).join('、')}
+已经记得的关于 TA：${JSON.stringify((S.memory||[]).map(m=>m.text))}
+【复盘】${r.text.slice(0,600)}
+【之前聊过的】${t.slice(0,from).filter(m=>m.role!=='memo'&&!m.err).map(m=>(m.role==='user'?'TA：':'你：')+m.text).join(' / ')||'（无）'}
+【这次新聊的】
+${part.map(m=>(m.role==='user'?'TA：':'你：')+m.text).join('\n')}`;
+  try{
+    const out=parseJSON(await chat([{role:'system',content:sys},{role:'user',content:user}],0.3,{json:true}));
+    const byName=n=>activeProjects().find(p=>p.name===String(n||'').trim());
+    (out.updates||[]).filter(u=>u&&u.note).slice(0,4).forEach(u=>{const p=byName(u.project);if(!p)return;
+      p.rvNotes=[...(p.rvNotes||[]),{text:String(u.note).slice(0,60),ts:Date.now()}].slice(-5);
+      p.profile=(p.profile||'')+`\n（${dkey(Date.now())} 复盘里说）${String(u.note).slice(0,60)}`;p.profile=p.profile.slice(-900);});
+    (out.follow_ups||[]).filter(f=>f&&f.content).slice(0,3).forEach(f=>{const p=byName(f.project);if(!p)return;
+      if(p.followUps.some(o=>fuSim(o.content,f.content)>=0.6))return;
+      const due=/^\d{4}-\d\d-\d\d$/.test(f.due_date||'')?f.due_date:dkey(Date.now()+3*DAY);
+      p.followUps.push({id:uid('f'),content:String(f.content).slice(0,60),due,done:false,created:Date.now()});});
+    const rm=(out.about_me_remove||[]).map(String);
+    if(rm.length)S.memory=S.memory.filter(m=>!rm.some(x=>fuSim(x,m.text)>=0.8));
+    (out.about_me_add||[]).filter(x=>x&&String(x).trim()).slice(0,3).forEach(x=>{x=String(x).slice(0,40);
+      const dup=S.memory.find(m=>fuSim(m.text,x)>=0.7);if(dup){dup.text=x;dup.ts=Date.now();}else S.memory.push({id:uid('m'),text:x,ts:Date.now(),from:r.id});});
+    if(S.memory.length>20)S.memory=S.memory.slice(-20);
+    r.digested=t.length;
+    if(out.noted&&String(out.noted).trim())r.thread.push({role:'memo',text:String(out.noted).trim().slice(0,60),ts:Date.now()});
+    save();render();
+  }catch(e){console.warn('复盘聊天没记下',e);}
+}
+// 下一次复盘、回应时能看到之前复盘里聊过的
+function rvChatText(kind){const r=S.reviews.filter(x=>x.status==='done'&&x.kind===kind&&(x.thread||[]).some(m=>m.role==='user')).sort((a,b)=>b.ts-a.ts)[0];
+  if(!r)return '';return `\n上一次${{day:'日',week:'周',month:'月'}[kind]}复盘后你们聊过：`+r.thread.filter(m=>m.role!=='memo'&&!m.err).slice(-6).map(m=>(m.role==='user'?'TA：':'你：')+m.text.slice(0,80)).join(' / ');}
 /* ============ 接着聊 ============ */
 async function followUp(l,text){
   const pids=logPids(l);
@@ -1061,12 +1127,14 @@ function setRating(ref,kind,text,v){
 const rating=ref=>S.feedback.find(x=>x.ref===ref);
 function ratingRow(ref,kind){
   const f=rating(ref);
-  let h=`<div class="rate"><button class="${f?.v==='good'?'on':''}" data-rate="${ref}|${kind}|good">好</button><button class="${f?.v==='bad'?'on bad':''}" data-rate="${ref}|${kind}|bad">不好</button>`;
-  if(f?.reason)h+=`<span class="why">· ${esc(f.reason)}</span>`;
+  let h=`<div class="rate"><button class="${f?.v==='good'?'on':''}" data-rate="${ref}|${kind}|good">好</button><button class="${f?.v==='mid'?'on mid':''}" data-rate="${ref}|${kind}|mid">一般</button><button class="${f?.v==='bad'?'on bad':''}" data-rate="${ref}|${kind}|bad">不好</button>`;
+  if(f&&f.reason&&V.reasonFor!==ref)h+=`<button class="why" data-reasonedit="${ref}" title="改原因">· ${esc(f.reason)} ✎</button>`;
+  else if(f&&!f.reason&&V.reasonFor!==ref)h+=`<button class="why" data-reasonedit="${ref}">+ 写个原因</button>`;
   h+='</div>';
-  if(f&&!f.reason&&V.reasonFor===ref){
-    const opts=f.v==='bad'?BAD_REASONS:['问到点上了','很具体','语气舒服','被安慰到'];
-    h+=`<div class="reasons">${opts.map(r=>`<button data-reason="${ref}|${r}">${r}</button>`).join('')}</div><form class="replybox" data-reasonform="${ref}"><input name="t" placeholder="或者写半句原因（可不填）" autocomplete="off"><button>记下</button></form>`;
+  if(f&&V.reasonFor===ref){
+    const opts=f.v==='bad'?BAD_REASONS:f.v==='mid'?MID_REASONS:(kind==='review'?['说到点上了','看到了自己的变化','结尾的问题好','长度刚好']:['问到点上了','很具体','语气舒服','被安慰到']);
+    const ph=f.v==='good'?'说说哪里好，比如「这句问得准」':f.v==='mid'?'说说差在哪':'说说哪里不好';
+    h+=`<div class="reasons">${opts.map(r=>`<button data-reason="${ref}|${r}">${r}</button>`).join('')}</div><form class="replybox" data-reasonform="${ref}"><input name="t" placeholder="${ph}（可不填）" value="${esc(f.reason&&!opts.includes(f.reason)?f.reason:'')}" autocomplete="off" maxlength="60"><button>记下</button></form>`;
   }
   return h;
 }
@@ -1338,9 +1406,14 @@ function viewHome(){
   if(!rvFind(rk,curP)||rvFind(rk,curP).status==='error')h+=`<button class="ghost" data-rvnow="${rk}">现在就写${rk==='day'?'今天':rk==='week'?'这周':'这个月'}的复盘</button>`;
   return h;
 }
+function rvThread(r){let th='';
+  (r.thread||[]).forEach(m=>th+=m.role==='memo'?`<div class="memo-line">✓ ${esc(m.text)}</div>`:m.role==='user'?`<div class="me">${esc(m.text)}</div>`:`<div class="note${m.err?' err':''}" style="margin-top:8px"><div class="txt">${esc(m.text)}</div></div>`);
+  if(r.replying)th+=`<div class="note wait" style="margin-top:8px"><div class="txt">……</div></div>`;
+  const open=V.rvReply===r.id;
+  return `${th?`<div class="thread">${th}</div>`:''}${open?`<form class="replybox" data-rvreply="${r.id}"><input name="t" placeholder="${(r.thread||[]).length?'回一句……':'回它结尾的问题，或者说说你的感受……'}" autocomplete="off" required><button>发送</button></form>`:(r.replying?'':`<button class="rvchat" data-rvchat="${r.id}">💬 ${(r.thread||[]).some(m=>m.role==='user')?'接着聊':'聊几句'}</button>`)}`;}
 function reviewCard(r,inList){
   const [f,t]=periodRange(r.kind,r.period);const more=r.status==='done'?logsIn(f,t).length-(r.logCount||0):0;
-  return `<div class="review ${r.kind}"><div class="rt"><span class="rk">${{day:'日',week:'周',month:'月'}[r.kind]}</span>${periodLabel(r.kind,r.period)}${more>0?` · <span style="color:var(--warn)">之后又写了 ${more} 条</span> <button class="mini" data-rvregen="${r.kind}|${r.period}">重写</button>`:''}</div><div class="txt" style="${r.status==='error'?'color:var(--warn);font-family:var(--sans);font-size:13px':''}">${r.status==='pending'?`正在翻你${r.kind==='day'?'今天':r.kind==='week'?'这一周':'这个月'}的本子……`:esc(r.text)}</div>${r.status==='done'?ratingRow(r.id,'review'):''}${!inList&&r.kind!=='day'&&r.status==='done'&&Date.now()-(S.settings.lastExport||0)>7*DAY?`<div class="hint" style="margin-top:8px">数据只存在这台设备的浏览器里，${S.settings.lastExport?'上次备份是 '+daysAgo(S.settings.lastExport)+' 天前':'还没备份过'}。<button class="mini" data-act="export">现在备份</button></div>`:''}${r.status!=='pending'?`<div class="eacts">${!inList&&!r.seen?`<button style="color:var(--pen)" data-rvseen="${r.id}">看过了</button>`:''}${r.status==='error'?`<button style="color:var(--pen)" data-rvregen="${r.kind}|${r.period}">重试</button>`:''}<button data-delrev="${r.id}">删除</button></div>`:''}</div>`;
+  return `<div class="review ${r.kind}"><div class="rt"><span class="rk">${{day:'日',week:'周',month:'月'}[r.kind]}</span>${periodLabel(r.kind,r.period)}${more>0?` · <span style="color:var(--warn)">之后又写了 ${more} 条</span> <button class="mini" data-rvregen="${r.kind}|${r.period}">重写</button>`:''}</div><div class="txt" style="${r.status==='error'?'color:var(--warn);font-family:var(--sans);font-size:13px':''}">${r.status==='pending'?`正在翻你${r.kind==='day'?'今天':r.kind==='week'?'这一周':'这个月'}的本子……`:esc(r.text)}</div>${r.status==='done'?ratingRow(r.id,'review')+rvThread(r):''}${!inList&&r.kind!=='day'&&r.status==='done'&&Date.now()-(S.settings.lastExport||0)>7*DAY?`<div class="hint" style="margin-top:8px">数据只存在这台设备的浏览器里，${S.settings.lastExport?'上次备份是 '+daysAgo(S.settings.lastExport)+' 天前':'还没备份过'}。<button class="mini" data-act="export">现在备份</button></div>`:''}${r.status!=='pending'?`<div class="eacts">${!inList&&!r.seen?`<button style="color:var(--pen)" data-rvseen="${r.id}">看过了</button>`:''}${r.status==='error'?`<button style="color:var(--pen)" data-rvregen="${r.kind}|${r.period}">重试</button>`:''}<button data-delrev="${r.id}">删除</button></div>`:''}</div>`;
 }
 function timeline(ls){let h='',last='';ls.forEach(l=>{const k=dkey(l.ts);if(k!==last){h+=`<div class="day">${dayLabel(k)}</div>`;last=k;}h+=logCard(l);});return h;}
 
@@ -1465,7 +1538,7 @@ function viewLists(){
   return h;
 }
 function viewSettings(){
-  const st=S.settings;const good=S.feedback.filter(f=>f.v==='good').length,bad=S.feedback.filter(f=>f.v==='bad').length;
+  const st=S.settings;const good=S.feedback.filter(f=>f.v==='good').length,bad=S.feedback.filter(f=>f.v==='bad').length,mid=S.feedback.filter(f=>f.v==='mid').length;
   return header('设置')+`
   <div class="card"><h3 style="font-size:15px;margin-bottom:4px">AI 服务</h3><p>数据只存在这台设备的浏览器里，写记录时才会把相关内容发给你选的 AI 服务。Key 也只保存在本机。</p>
   <label class="f">服务商</label><div class="seg">${Object.entries(PRESETS).map(([k,v])=>`<button class="${st.preset===k?'on':''}" data-preset="${k}">${v.label}</button>`).join('')}</div>
@@ -1490,10 +1563,12 @@ function viewSettings(){
   <label class="f">${AN()}记得的关于你（${(S.memory||[]).length}）</label>
   ${(S.memory||[]).length?`<div class="memlist">${S.memory.map(m=>`<div class="memitem"><span>${esc(m.text)}</span><button data-memdel="${m.id}" aria-label="忘掉">忘掉</button></div>`).join('')}</div>`:`<p>你在聊天里说的偏好和背景，比如"回复短一点""我周末不碰工作"，${AN()}会记在这里，以后每次都用上。</p>`}
   <form class="replybox" data-memadd="1"><input name="t" placeholder="直接告诉${AN()}一件要记住的事" autocomplete="off" maxlength="40"><button>记住</button></form>
-  <label class="f">你给过的评价</label><p>好 ${good} 次 · 不好 ${bad} 次。最近 5 条"不好"的原因会带进每次回应，让它慢慢调整。</p>
+  <label class="f">你给过的评价</label><p>好 ${good} 次 · 一般 ${mid} 次 · 不好 ${bad} 次。最近几条"不好""一般"的原因会带进每次回应，让它慢慢调整。</p>
   ${S.feedback.length?'<button class="ghost" data-act="clearfb">清空评价记录</button>':''}</div>
   <div class="card"><h3 style="font-size:15px;margin-bottom:4px">备份</h3><p>清理浏览器数据会把记录一起清掉。建议隔段时间导出一次。</p>
-  <button class="ghost" data-act="exportmd">导出全部为文本（Markdown）</button><button class="ghost" data-act="export">导出备份（JSON，可恢复）</button><button class="ghost" data-act="import">从备份恢复</button><input type="file" id="impfile" accept=".json" hidden>
+  <button class="ghost" data-act="exportmd">导出全部为文本（Markdown）</button><button class="ghost" data-act="export">导出备份（JSON，可恢复）</button><button class="ghost" data-act="merge">合并另一台手机的备份</button><input type="file" id="mergefile" accept=".json,application/json" hidden>
+  <p class="hint" style="margin:2px 0 10px">两台手机都在记？在 A 手机「导出备份」，发到 B 手机点「合并」；B 再导出一份发回 A 合并，两边就一样了。合并只会加进新的，不会覆盖这台手机上已有的记录；在任一台上删掉的，合并后两边都会删掉。</p>
+  <button class="ghost" data-act="import">从备份恢复（整份替换）</button><input type="file" id="impfile" accept=".json" hidden>
   <button class="ghost danger" data-act="wipe">清空全部数据</button></div>
   <p class="sub" style="text-align:center">共 ${S.projects.length} 个项目 · ${S.logs.length} 条记录 · 数据版本 v3</p>`;
 }
@@ -1593,7 +1668,62 @@ function projSheet(editId,name){
   <button class="primary" data-act="saveproj">${p?'保存':'创建项目'}</button>
   ${p?`<button class="ghost danger" data-delproj="${p.id}">删除项目及其全部记录</button>`:''}`);
 }
-function removeLog(l){undoLog(l);(l.photos||[]).forEach(p=>phDel(p.id));S.logs=S.logs.filter(x=>x.id!==l.id);S.feedback=S.feedback.filter(f=>f.ref!==l.id);}
+/* ============ 合并另一台手机的备份 ============ */
+function lmt(l){return Math.max(l.mt||0,l.ts||0,...(l.thread||[]).map(m=>m.ts||0));}
+function planMerge(inc){
+  inc=inc.v===3?fixup(inc):migrate(inc);
+  const del={...(S.deleted||{}),...(inc.deleted||{})};
+  // 同名项目当成同一个：两台手机各自新建的「学吉他」合在一起
+  const idMap={};const lp=new Map(S.projects.map(p=>[p.id,p]));
+  inc.projects.forEach(p=>{if(lp.has(p.id))return;const same=S.projects.find(x=>x.name.trim()===p.name.trim());if(same)idMap[p.id]=same.id;});
+  const mp=id=>idMap[id]||id;
+  inc.logs.forEach(l=>{l.items.forEach(i=>{if(i.pid)i.pid=mp(i.pid);if(i.linkPid)i.linkPid=mp(i.linkPid);if(i.toPid)i.toPid=mp(i.toPid);});if(l.forcePid)l.forcePid=mp(l.forcePid);if(l.rebuildPids)l.rebuildPids=l.rebuildPids.map(mp);});
+  inc.blockers.forEach(b=>b.pid=mp(b.pid));
+  const st={newLogs:0,newProjects:0,mergedProjects:Object.keys(idMap).length,newBlockers:0,newReviews:0,newMemory:0,touched:new Set()};
+  return {inc,del,idMap,st};
+}
+function applyMerge({inc,del,idMap,st}){
+  // 项目
+  inc.projects.forEach(ip=>{if(del[ip.id])return;
+    if(idMap[ip.id]){const lp=P(idMap[ip.id]);
+      ip.followUps.forEach(f=>{if(!lp.followUps.some(o=>o.id===f.id||fuSim(o.content,f.content)>=0.7))lp.followUps.push(f);});
+      st.touched.add(lp.id);return;}
+    const lp=P(ip.id);
+    if(!lp){S.projects.push(ip);st.newProjects++;return;}
+    if((ip.profileTs||0)>(lp.profileTs||0)){lp.profile=ip.profile;lp.pf=ip.pf;lp.profileTs=ip.profileTs;}
+    ip.followUps.forEach(f=>{const o=lp.followUps.find(x=>x.id===f.id);if(!o){if(!lp.followUps.some(x=>fuSim(x.content,f.content)>=0.7))lp.followUps.push(f);}else if(f.done&&!o.done)Object.assign(o,f);});
+    lp.archived=lp.archived||ip.archived;lp.lastAsked=Math.max(lp.lastAsked||0,ip.lastAsked||0);});
+  S.projects=S.projects.filter(p=>!del[p.id]);
+  // 记录
+  inc.logs.forEach(il=>{if(del[il.id])return;const ll=L(il.id);
+    if(!ll){if(['splitting','replying'].includes(il.status)){il.status='error';il.err='在另一台手机上没整理完，点「重试」。';}S.logs.push(il);st.newLogs++;logPids(il).forEach(id=>st.touched.add(id));return;}
+    if(lmt(il)>lmt(ll)&&il.status==='done'){Object.assign(ll,il);logPids(ll).forEach(id=>st.touched.add(id));}});
+  S.logs=S.logs.filter(l=>!del[l.id]).sort((a,b)=>a.ts-b.ts);
+  // 磕绊
+  inc.blockers.forEach(ib=>{if(del[ib.id]||!P(ib.pid))return;const lb=B(ib.id);
+    if(!lb){const dup=S.blockers.find(b=>b.pid===ib.pid&&!b.solved&&fuSim(b.content,ib.content)>=0.8);
+      if(dup){dup.first=Math.min(dup.first,ib.first);dup.last=Math.max(dup.last,ib.last);if(ib.solved){dup.solved=true;dup.solvedTs=ib.solvedTs;}}
+      else{S.blockers.push(ib);st.newBlockers++;}return;}
+    if((ib.last||0)>(lb.last||0)||(ib.solvedTs||0)>(lb.solvedTs||0))Object.assign(lb,ib);});
+  S.blockers=S.blockers.filter(b=>!del[b.id]);
+  // 复盘：同一天 / 周 / 月只留一篇，留聊得多、写得晚的
+  inc.reviews.forEach(ir=>{const lr=S.reviews.find(r=>r.kind===ir.kind&&r.period===ir.period);
+    if(!lr){if(ir.status==='pending')return;S.reviews.push(ir);st.newReviews++;return;}
+    if(lr.status==='deleted'||ir.status==='deleted'){lr.status='deleted';lr.text='';return;}
+    const score=r=>(r.status==='done'?1e15:0)+((r.thread||[]).length*1e13)+(r.ts||0);
+    if(score(ir)>score(lr))Object.assign(lr,ir);lr.seen=lr.seen&&ir.seen;});
+  // 评价
+  inc.feedback.forEach(f=>{const o=S.feedback.find(x=>x.ref===f.ref);if(!o)S.feedback.push(f);else if((f.ts||0)>(o.ts||0))Object.assign(o,f);});
+  // 关于你
+  inc.memory.forEach(m=>{if(del[m.id])return;if(S.memory.some(x=>x.id===m.id||fuSim(x.text,m.text)>=0.7))return;S.memory.push(m);st.newMemory++;});
+  S.memory=S.memory.filter(m=>!del[m.id]).sort((a,b)=>a.ts-b.ts).slice(-20);
+  S.deleted=del;
+  if(inc.settings.lastExport)S.settings.lastExport=Math.max(S.settings.lastExport||0,inc.settings.lastExport);
+  return st;
+}
+function readText(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);r.readAsText(f);});}
+function tomb(id){if(id){S.deleted=S.deleted||{};S.deleted[id]=Date.now();}}
+function removeLog(l){tomb(l.id);S.blockers.filter(b=>b.logId===l.id).forEach(b=>tomb(b.id));undoLog(l);(l.photos||[]).forEach(p=>phDel(p.id));S.logs=S.logs.filter(x=>x.id!==l.id);S.feedback=S.feedback.filter(f=>f.ref!==l.id);}
 
 /* ============ 事件 ============ */
 document.addEventListener('click',ev=>{
@@ -1618,6 +1748,7 @@ document.addEventListener('click',ev=>{
   if(d.confirm){openConfirm(d.confirm);return;}
   if(d.pcat){pdraft.cat=d.pcat;document.querySelectorAll('[data-pcat]').forEach(b=>b.classList.toggle('on',b.dataset.pcat===d.pcat));return;}
   if(d.pcolor){pdraft.color=d.pcolor;document.querySelectorAll('[data-pcolor]').forEach(b=>b.classList.toggle('on',b.dataset.pcolor===d.pcolor));return;}
+  if(d.rvchat){V.rvReply=V.rvReply===d.rvchat?null:d.rvchat;render();setTimeout(()=>document.querySelector('[data-rvreply] input')?.focus(),50);return;}
   if(d.replyopen){V.replyOpen=V.replyOpen===d.replyopen?null:d.replyopen;render();setTimeout(()=>document.querySelector('[data-reply] input')?.focus(),50);return;}
   if(d.rereply){const l=L(d.rereply);if(l){l.status='replying';render();replyLog(l);}return;}
   if(d.retry){const l=L(d.retry);if(!l)return;if(l.stage==='reply'&&l.items.length){l.status='replying';render();replyLog(l).then(()=>updateProfiles(logPids(l),l));}else runLog(l);return;}
@@ -1625,7 +1756,7 @@ document.addEventListener('click',ev=>{
   if(d.edit){composeSheet(null,d.edit);return;}
   if(d.del){if(confirm('删除这条记录？它带来的磕绊变化也会撤回，相关项目的档案会重新整理。')){const l=L(d.del);
     if(l){const pids=logPids(l);removeLog(l);save();render();pids.forEach(pid=>rebuildProfile(pid,false));}}return;}
-  if(d.memdel){S.memory=S.memory.filter(m=>m.id!==d.memdel);save();render();toast('忘掉了');return;}
+  if(d.memdel){tomb(d.memdel);S.memory=S.memory.filter(m=>m.id!==d.memdel);save();render();toast('忘掉了');return;}
   if(d.delrev){if(!confirm('删除这篇复盘？自动生成不会再补写它。'))return;const r=S.reviews.find(x=>x.id===d.delrev);if(r){r.status='deleted';r.text='';r.seen=true;}save();render();return;}
   if(d.rvseen){const r=S.reviews.find(x=>x.id===d.rvseen);if(r){r.seen=true;save();render();}return;}
   if(d.rvk){V.rvk=d.rvk;V.rvMore=false;render();return;}
@@ -1634,6 +1765,7 @@ document.addEventListener('click',ev=>{
   if(d.rvon){const k=d.rvon;S.settings.rv=S.settings.rv||{};S.settings.rv[k]={...rvCfg(k),on:!rvCfg(k).on};save();rvSheet();render();return;}
   if(d.rate){const [ref,kind,v]=d.rate.split('|');const src=kind==='reply'?L(ref)?.reply:kind==='opener'?S.opener?.text:S.reviews.find(r=>r.id===ref)?.text;
     setRating(ref,kind,src||'',v);V.reasonFor=rating(ref)?ref:null;render();return;}
+  if(d.reasonedit){V.reasonFor=d.reasonedit;render();setTimeout(()=>document.querySelector('[data-reasonform] input')?.focus(),50);return;}
   if(d.reason){const [ref,r]=d.reason.split('|');const f=rating(ref);if(f){f.reason=r;save();}V.reasonFor=null;render();toast('记下了，下次会注意');return;}
   if(d.toggle){const b=B(d.toggle);if(b){b.solved=!b.solved;b.solvedTs=b.solved?Date.now():null;b.solvedBy=null;save();render();toast(b.solved?'又解决一个':'已改回未解决');}return;}
   if(d.solveop){const b=B(d.solveop);if(b){b.solved=true;b.solvedTs=Date.now();S.opener.dismissed=true;save();render();toast('太好了，又解决一个');}return;}
@@ -1650,7 +1782,7 @@ document.addEventListener('click',ev=>{
   if(d.idea2proj){const i=findItem(d.idea2proj);if(i){closeSheet();projSheet(null,i.content.slice(0,20));pdraft.fromIdea=i.id;$('#pdesc').value=i.content;}return;}
   if(d.editproj){projSheet(d.editproj);return;}
   if(d.arch){const p=P(d.arch);p.archived=!p.archived;save();render();toast(p.archived?'已归档':'已恢复');return;}
-  if(d.delproj){if(confirm('删除项目会同时删除它的全部记录，确定？')){const id=d.delproj;S.projects=S.projects.filter(p=>p.id!==id);
+  if(d.delproj){if(confirm('删除项目会同时删除它的全部记录，确定？')){const id=d.delproj;tomb(id);S.logs.filter(l=>l.items.length&&l.items.every(i=>i.pid===id)).forEach(l=>tomb(l.id));S.blockers.filter(b=>b.pid===id).forEach(b=>tomb(b.id));S.projects=S.projects.filter(p=>p.id!==id);
     S.logs.forEach(l=>l.items=l.items.filter(i=>i.pid!==id));S.logs=S.logs.filter(l=>l.items.length||l.status!=='done');S.blockers=S.blockers.filter(b=>b.pid!==id);save();closeSheet();V.tab='projects';render();}return;}
   if(d.preset){const pr=PRESETS[d.preset];S.settings.preset=d.preset;if(d.preset!=='custom'){$('#s_base').value=pr.base;$('#s_model').value=pr.model;}document.querySelectorAll('[data-preset]').forEach(b=>b.classList.toggle('on',b.dataset.preset===d.preset));return;}
   if(d.voice){S.settings.voice=d.voice;save();render();return;}
@@ -1686,7 +1818,7 @@ document.addEventListener('click',ev=>{
     if(l){const oldPids=[...new Set([...(l.rebuildPids||[]),...logPids(l)])];undoLog(l);
       const keep=new Set(photos.map(p=>p.id));(l.photos||[]).forEach(p=>{if(!keep.has(p.id))phDel(p.id);});
       const same=(l.photos||[]).map(p=>p.id).join()===photos.map(p=>p.id).join();
-      Object.assign(l,{raw,mode,forcePid,items:[],reply:'',thread:[],exception:false,rebuildPids:oldPids,photos,photoText:same?l.photoText:''});S.feedback=S.feedback.filter(f=>f.ref!==l.id);}
+      Object.assign(l,{mt:Date.now(),raw,mode,forcePid,items:[],reply:'',thread:[],exception:false,rebuildPids:oldPids,photos,photoText:same?l.photoText:''});S.feedback=S.feedback.filter(f=>f.ref!==l.id);}
     else{setDraft('');l={id:uid('e'),ts:Date.now(),raw,mode,forcePid,items:[],mood:'neutral',reply:'',status:'splitting',thread:[],voiceEmotion:draft.voiceEmotion||'',photos,photoText:''};S.logs.push(l);}
     save();closeSheet();if(V.tab!=='project')V.tab='home';scrollTo(0,0);runLog(l);return;
   }
@@ -1709,12 +1841,14 @@ document.addEventListener('click',ev=>{
     Promise.all(ids.map(async id=>[id,await phGet(id)])).then(arr=>{const photoData=Object.fromEntries(arr.filter(x=>x[1]));
       download(JSON.stringify({...S,settings:{...S.settings,key:'',asrKey:''},photoData}),'项目手记备份-'+dkey(Date.now())+'.json','application/json');
       if(ids.length)toast('备份里带上了 '+Object.keys(photoData).length+' 张照片');});return;}
-  if(act==='import'){$('#impfile').click();return;}
+  if(act==='import'){if(!confirm('「恢复」会用备份整个替换这台手机上的数据，这台手机上新写的会丢掉。\n\n如果两台手机都在记，请用「合并另一台手机的备份」。\n\n仍然要整份替换吗？'))return;$('#impfile').click();return;}
+  if(act==='merge'){$('#mergefile').click();return;}
   if(act==='wipe'){if(confirm('清空全部项目和记录？此操作不能撤销。')&&confirm('再确认一次：真的清空？')){const st=S.settings;S=blank();S.settings=st;save();render();}return;}
 });
 $('#mask').addEventListener('click',ev=>{if(ev.target.id==='mask')closeSheet();});
 $('#fab').addEventListener('click',()=>composeSheet());
 document.addEventListener('submit',ev=>{const f=ev.target;
+  if(f.dataset.rvreply){ev.preventDefault();const t=f.querySelector('input').value.trim();const r=S.reviews.find(x=>x.id===f.dataset.rvreply);if(t&&r){V.rvReply=null;rvFollowUp(r,t);}return;}
   if(f.dataset.reply){ev.preventDefault();const t=f.querySelector('input').value.trim();const l=L(f.dataset.reply);if(t&&l){V.replyOpen=null;followUp(l,t);}}
   if(f.dataset.cnewform!==undefined){ev.preventDefault();const k=+f.dataset.cnewform;const nm=f.querySelector('input').value.trim().slice(0,20);
     if(!nm){toast('给项目起个名字');return;}
@@ -1723,12 +1857,28 @@ document.addEventListener('submit',ev=>{const f=ev.target;
     cdraft.items[k].pid=ex?ex.id:'new:'+nm;if(!ex)cdraft.newNames=[...new Set([...(cdraft.newNames||[]),nm])];
     cdraft.newFor=null;renderConfirm();if(ex)toast('已经有「'+nm+'」了，直接归进去');return;}
   if(f.dataset.memadd){ev.preventDefault();const t=f.querySelector('input').value.trim();if(t){S.memory.push({id:uid('m'),text:t.slice(0,40),ts:Date.now(),manual:true});save();render();toast('记住了');}return;}
-  if(f.dataset.reasonform){ev.preventDefault();const r=rating(f.dataset.reasonform);if(r){r.reason=f.querySelector('input').value.trim()||(r.v==='bad'?'没说':'');save();}V.reasonFor=null;render();toast('记下了，下次会注意');}
+  if(f.dataset.reasonform){ev.preventDefault();const r=rating(f.dataset.reasonform);if(r){r.reason=f.querySelector('input').value.trim()||(r.v!=='good'?'没说':'');save();}V.reasonFor=null;render();toast('记下了，下次会注意');}
 });
 document.addEventListener('input',ev=>{if(ev.target.id==='ctext'&&draft&&!draft.editId)setDraft(ev.target.value);const k=ev.target.dataset?.citem;if(k!==undefined&&cdraft)cdraft.items[+k].content=ev.target.value;});
 document.addEventListener('change',ev=>{
   if(ev.target.id==='phfile'){const fl=ev.target.files;if(fl&&fl.length)addPhotos(fl);ev.target.value='';return;}
-  if(ev.target.id==='impfile'){const f=ev.target.files[0];if(!f)return;f.text().then(t=>{const d=JSON.parse(t);if(!d.projects)throw 0;
+  if(ev.target.id==='mergefile'){const fl=ev.target.files[0];ev.target.value='';if(!fl)return;
+    readText(fl).then(async t=>{let d;try{d=JSON.parse(t);}catch(e){throw 0;}if(!d.projects)throw 0;
+      const pd=d.photoData||{};delete d.photoData;
+      const plan=planMerge(d);const inc=plan.inc;
+      const nl=inc.logs.filter(l=>!L(l.id)&&!plan.del[l.id]).length;
+      const np=inc.projects.filter(p=>!P(p.id)&&!plan.idMap[p.id]&&!plan.del[p.id]).map(p=>p.name);
+      const same=Object.keys(plan.idMap).map(id=>P(plan.idMap[id]).name);
+      const gone=Object.keys(inc.deleted||{}).filter(id=>L(id)).length;
+      const msg=`这份备份里：\n· 新记录 ${nl} 条\n${np.length?'· 新项目：'+np.join('、')+'\n':''}${same.length?'· 同名项目会合在一起：'+same.join('、')+'\n':''}${gone?'· 另一台手机上删掉的 '+gone+' 条，这里也会删掉\n':''}\n这台手机上已有的记录不会被覆盖。合并吗？`;
+      if(!confirm(msg))return;
+      for(const [id,v] of Object.entries(pd)){if(!(await phGet(id)))await phPut(id,v);}
+      const st=applyMerge(plan);save();render();
+      toast(`合并好了：新记录 ${st.newLogs} 条${st.newProjects?'，新项目 '+st.newProjects+' 个':''}`);
+      // 有新记录的项目，档案重新整理一次（两边的内容合在一起）
+      if(S.settings.key)[...st.touched].filter(id=>P(id)).forEach(id=>rebuildProfile(id,false));
+    }).catch(()=>alert('这个文件不是项目手记的备份。'));return;}
+  if(ev.target.id==='impfile'){const f=ev.target.files[0];ev.target.value='';if(!f)return;readText(f).then(t=>{const d=JSON.parse(t);if(!d.projects)throw 0;
     const key=S.settings.key;const pd=d.photoData||{};delete d.photoData;Object.entries(pd).forEach(([id,v])=>phPut(id,v));S=d.v===3?fixup(d):migrate(d);if(!S.settings.key)S.settings.key=key;save();render();toast('已恢复 '+S.logs.length+' 条记录');}).catch(()=>alert('这个文件不是项目手记的备份。'));}
   const k=ev.target.dataset?.setting;if(k){S.settings[k]=ev.target.value.trim()||(k==='aiName'?'小记':'');save();render();}
   const c=ev.target.dataset?.check;if(c){S.settings[c]=ev.target.checked;save();}
@@ -1738,7 +1888,7 @@ document.addEventListener('keydown',ev=>{if(ev.key==='Escape')closeSheet();if((e
 
 // 启动：恢复中断的请求
 S.logs.forEach(l=>{if(l.status==='splitting'||l.status==='replying'){l.stage=l.status==='replying'?'reply':'split';l.status='error';l.err='上次没等到就关掉了，点「重试」。';}l.replying=false;});
-S.reviews.forEach(r=>{if(r.status==='pending'){r.status='error';r.text='上次没生成完。';}});
+S.reviews.forEach(r=>{if(r.status==='pending'){r.status='error';r.text='上次没生成完。';}r.replying=false;});
 if(S.opener&&S.opener.status==='pending')S.opener=null;
 save();render();
 autoCompose();
