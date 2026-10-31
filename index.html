@@ -209,6 +209,28 @@ textarea.inp{min-height:150px;resize:vertical;line-height:1.7;background:#fff re
 @keyframes sp{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.recdot,.spin{animation:none}}
 .vfab{position:fixed;right:calc(max(18px,calc(50% - 262px)) + 132px);bottom:calc(76px + env(safe-area-inset-bottom));width:48px;height:48px;border-radius:50%;background:var(--pen);color:#fff;display:grid;place-items:center;box-shadow:0 6px 18px rgba(37,97,92,.3);z-index:20}
+.ltabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:2px 0 12px}
+.lgroup{background:var(--sheet);border:1px solid var(--rule);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:6px}
+.glabel{font-size:11px;letter-spacing:2px;color:var(--ink-3);padding:0 4px}
+.ltab{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:8px;font-size:14px;color:var(--ink-2);text-align:left;position:relative}
+.ltab b{margin-left:auto;font-family:var(--mono);font-size:13px;font-weight:600;color:var(--ink-3)}
+.ltab.on{background:var(--ink);color:var(--sheet)}
+.ltab.on b{color:var(--sheet)}
+.ltab .hot{width:7px;height:7px;border-radius:50%;background:var(--warn);flex:none}
+.filters{margin-bottom:12px}
+.frow{display:flex;align-items:center;gap:8px}
+.frow .tabs{flex:1;min-width:0;padding-bottom:4px}
+.flabel{font-size:12px;color:var(--ink-3);flex:none;width:28px}
+.tab.sm{padding:4px 10px;font-size:12px;background:#fff;color:var(--ink);border-color:#C9D1DA}
+.tab.sm.on{background:var(--ink);color:var(--sheet);border-color:var(--ink)}
+.item .ico{font-size:15px;line-height:1.5;flex:none}
+.iacts{display:flex;align-items:center;gap:12px;margin-top:6px}
+.iacts .mini{font-size:12px;color:var(--pen)}
+.iacts .star{font-size:16px;line-height:1;color:var(--ink-3)}
+.iacts .star.on{color:var(--gold)}
+.item.idea.project .it,.item.idea.drop .it{color:var(--ink-3)}
+.item.idea.drop .it{text-decoration:line-through}
+.fold{display:block;width:100%;text-align:center;font-size:13px;color:var(--ink-2);padding:10px 0;margin:4px 0 8px;border-top:1px dashed var(--rule)}
 </style>
 </head>
 <body>
@@ -299,7 +321,11 @@ function projStats(pid){
 }
 function sumRange(pid,from,to){let min=0,money=0;S.logs.forEach(l=>{if(l.ts<from||l.ts>=to||l.status==='confirm')return;
   l.items.forEach(i=>{if(i.pid===pid){min+=+i.minutes||0;money+=+i.money||0;}});});return {min,money};}
-function allIdeas(){const r=[];S.logs.forEach(l=>l.items.forEach(i=>{if(i.type==='idea'&&i.pid)r.push({text:i.content,pid:i.pid,ts:l.ts});}));return r.sort((a,b)=>b.ts-a.ts);}
+function allIdeas(){const r=[];S.logs.forEach(l=>{if(l.status==='confirm')return;l.items.forEach(i=>{if(i.type==='idea'&&i.pid&&P(i.pid))r.push({id:i.id,text:i.content,pid:i.pid,ts:l.ts,state:i.ideaState||'new',toPid:i.toPid||null});});});return r.sort((a,b)=>b.ts-a.ts);}
+function allGains(){const r=[];S.logs.forEach(l=>{if(l.status==='confirm')return;l.items.forEach(i=>{if(i.type==='gain'&&i.pid&&P(i.pid))r.push({id:i.id,text:i.content,pid:i.pid,ts:l.ts});});});return r.sort((a,b)=>b.ts-a.ts);}
+function findItem(id){for(const l of S.logs)for(const i of l.items)if(i.id===id)return i;return null;}
+function attentionCount(){const today=dkey(Date.now());
+  return S.blockers.filter(b=>!b.solved&&P(b.pid)&&!P(b.pid).archived&&daysAgo(b.first)>=3).length+activeProjects().reduce((n,p)=>n+p.followUps.filter(f=>!f.done&&f.due<=today).length,0);}
 
 /* ============ AI 基础 ============ */
 async function chat(messages,temperature=0.7){
@@ -673,10 +699,12 @@ function toMarkdown(){
     if(p.desc)out.push(`- 描述：${p.desc}`);
     out.push(`- 累计：${st.count} 条记录 · ${fmtMin(st.min)} · ${fmtMoney(st.money)}`,``);
     if(p.profile)out.push(`### ${nm}的档案`,``,p.profile,``);
+    const gs=allGains().filter(g=>g.pid===p.id);
+    if(gs.length){out.push(`### 收获`,``);gs.forEach(g=>out.push(`- ${g.text}（${dkey(g.ts)}）`));out.push(``);}
     const bs=S.blockers.filter(b=>b.pid===p.id);
     if(bs.length){out.push(`### 磕绊`,``);bs.forEach(b=>out.push(`- [${b.solved?'x':' '}] ${b.content}（${dkey(b.first)} 首次${b.solved&&b.solvedTs?'，'+dkey(b.solvedTs)+' 解决':'，最近提到 '+dkey(b.last)}）`));out.push(``);}
     const fu=p.followUps.filter(f=>!f.done);
-    if(fu.length){out.push(`### 待回访`,``);fu.forEach(f=>out.push(`- ${f.content}（${f.due}）`));out.push(``);}
+    if(fu.length){out.push(`### 说过要做的`,``);fu.forEach(f=>out.push(`- ${f.content}（${f.due}）`));out.push(``);}
     const ls=S.logs.filter(l=>logPids(l).includes(p.id)).sort((a,b)=>a.ts-b.ts);
     if(ls.length)out.push(`### 记录`,``);
     let last='';
@@ -810,7 +838,7 @@ function afterVoice(){
 }
 
 /* ============ 视图 ============ */
-let V={tab:'home',pid:null,filter:'all',replyOpen:null,listTab:'blocks',reasonFor:null};
+let V={tab:'home',pid:null,filter:'all',replyOpen:null,lt:'stuck',lcat:'all',lpid:'all',showSolved:false,ideaAll:false,reasonFor:null};
 const $=s=>document.querySelector(s);
 function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove('show'),1800);}
 const AN=()=>esc(S.settings.aiName||'小记');
@@ -822,7 +850,7 @@ function render(){
   else if(V.tab==='lists')a.innerHTML=viewLists();
   else if(V.tab==='settings')a.innerHTML=viewSettings();
   else {V.tab='home';a.innerHTML=viewHome();}
-  const openN=S.blockers.filter(b=>!b.solved&&P(b.pid)).length;
+  const openN=attentionCount();
   const navs=[['home','✎','手记'],['projects','▦','项目'],['lists','◇','清单'],['settings','⚙','设置']];
   const cur=V.tab==='project'?'projects':V.tab;
   $('#nav').innerHTML=navs.map(([k,i,l])=>`<button class="${cur===k?'on':''}" data-nav="${k}"><i>${i}</i>${l}${k==='lists'&&openN?`<span class="badge">${openN}</span>`:''}</button>`).join('');
@@ -918,35 +946,69 @@ function viewProject(){
   const ls=S.logs.filter(l=>logPids(l).includes(p.id)).sort((a,b)=>b.ts-a.ts);
   const open=S.blockers.filter(b=>b.pid===p.id&&!b.solved).sort((a,b)=>a.first-b.first);
   const fu=p.followUps.filter(f=>!f.done).sort((a,b)=>a.due<b.due?-1:1);
-  const ideas=allIdeas().filter(i=>i.pid===p.id);
+  const ideas=allIdeas().filter(i=>i.pid===p.id&&(i.state==='new'||i.state==='star'));const gains=allGains().filter(g=>g.pid===p.id);
   let h=`<button class="back" data-nav="projects">← 全部项目</button>`;
   h+=`<div class="phead" style="--c:${p.color}"><div class="cat" style="font-size:12px;color:var(--ink-3)">${esc(p.cat)} · 始于 ${dkey(p.created)}${p.archived?' · 已归档':''}</div><h2>${esc(p.name)}</h2>${p.desc?`<div class="goal">${esc(p.desc)}</div>`:''}
   <div class="stats"><div class="stat"><div class="n">${st.count}</div><div class="l">条记录</div></div><div class="stat"><div class="n">${fmtMin(st.min)}</div><div class="l">投入时间</div></div><div class="stat"><div class="n">${fmtMoney(st.money)}</div><div class="l">投入金钱</div></div></div>
   <div class="memo"><span>${AN()}的档案${p.profileTs?' · '+dkey(p.profileTs)+' 更新':''}${p.profiling?' · 正在更新…':''}</span>${p.profile?esc(p.profile):'<em style="color:var(--ink-3);font-style:normal">写几笔之后，这里会有一份关于这个项目的档案。</em>'}${p.profileErr?`<div class="hint" style="color:var(--warn)">上次档案没更新成功：${esc(p.profileErr)}</div>`:''}</div>
   <div class="prow"><button data-act="compose:${p.id}">写一笔</button><button data-editproj="${p.id}">编辑项目</button><button data-arch="${p.id}">${p.archived?'恢复':'归档'}</button></div></div>`;
-  if(fu.length)h+=`<div class="sec"><h2>${AN()}打算回访（${fu.length}）</h2></div>`+fu.map(fuItem).join('');
+  if(fu.length)h+=`<div class="sec"><h2>说过要做的（${fu.length}）</h2></div>`+fu.map(fuItem).join('');
   if(open.length)h+=`<div class="sec"><h2>还没解决（${open.length}）</h2></div>`+open.map(blockItem).join('');
   if(ideas.length)h+=`<div class="sec"><h2>灵感（${ideas.length}）</h2></div>`+ideas.slice(0,8).map(ideaItem).join('');
+  if(gains.length)h+=`<div class="sec"><h2>收获（${gains.length}）</h2>${gains.length>5?`<button data-golist="${p.id}">全部</button>`:''}</div>`+gains.slice(0,5).map(gainItem).join('');
   h+=`<div class="sec"><h2>时间线</h2></div>`;
   h+=ls.length?timeline(ls):`<div class="empty"><span class="hand">还没写过</span>写下第一笔：为什么开始这个项目？</div>`;
   return h;
 }
 function blockItem(b){const p=P(b.pid)||{name:'',color:'#999'};
   return `<div class="item ${b.solved?'done':''}"><button class="ck" data-toggle="${b.id}" aria-label="标记解决">${b.solved?'✓':''}</button><div style="flex:1"><div class="it">${esc(b.content)}</div><div class="from"><span class="dot" style="background:${p.color}"></span>${esc(p.name)} · ${b.solved?`${dkey(b.first)} → ${dkey(b.solvedTs||b.last)} 解决`:`已 ${daysAgo(b.first)} 天${b.last!==b.first?` · ${daysAgo(b.last)===0?'今天':daysAgo(b.last)+' 天前'}又提到`:''}`}</div></div></div>`;}
-function ideaItem(i){const p=P(i.pid)||{name:'',color:'#999'};
-  return `<div class="item"><span style="color:var(--gold);font-size:15px;line-height:1.5">✦</span><div style="flex:1"><div class="it">${esc(i.text)}</div><div class="from"><span class="dot" style="background:${p.color}"></span>${esc(p.name)} · ${dkey(i.ts)}</div></div><button style="font-size:12px;color:var(--pen)" data-idea2proj="${esc(i.text)}">变成项目</button></div>`;}
+const IDEA_ST={new:'新的',star:'留着',project:'已变成项目',drop:'放下了'};
+function ideaItem(i){const p=P(i.pid)||{name:'',color:'#999'};const to=i.toPid&&P(i.toPid);
+  let acts='';
+  if(i.state==='new'||i.state==='star')acts=`<button class="star ${i.state==='star'?'on':''}" data-istar="${i.id}" aria-label="留着">${i.state==='star'?'★':'☆'}</button><button class="mini" data-idea2proj="${i.id}">变成项目</button><button class="mini" data-idrop="${i.id}">放下</button>`;
+  else acts=`<button class="mini" data-ireset="${i.id}">${i.state==='drop'?'捡回来':'撤销'}</button>`;
+  return `<div class="item idea ${i.state}"><span class="ico" style="color:var(--gold)">✦</span><div style="flex:1;min-width:0"><div class="it">${esc(i.text)}</div><div class="from"><span class="dot" style="background:${p.color}"></span>${esc(p.name)} · ${dkey(i.ts)}${i.state==='project'?` · 变成了「${esc(to?to.name:'已删除的项目')}」`:i.state==='drop'?' · 放下了':''}</div><div class="iacts">${acts}</div></div></div>`;}
+function gainItem(g){const p=P(g.pid)||{name:'',color:'#999'};
+  return `<div class="item"><span class="ico" style="color:var(--pen)">◆</span><div style="flex:1"><div class="it">${esc(g.text)}</div><div class="from"><span class="dot" style="background:${p.color}"></span>${esc(p.name)} · ${dkey(g.ts)}</div></div></div>`;}
 function fuItem(f){const p=S.projects.find(x=>x.followUps.includes(f))||{name:'',color:'#999'};const due=f.due<=dkey(Date.now());
-  return `<div class="item"><span style="color:var(--pen);font-size:14px;line-height:1.6">↺</span><div style="flex:1"><div class="it">${esc(f.content)}</div><div class="from"><span class="dot" style="background:${p.color}"></span>${esc(p.name)} · ${due?'<span style="color:var(--warn)">该问了</span>':f.due.slice(5).replace('-','月')+'日后问'}</div></div><button style="font-size:12px;color:var(--ink-3)" data-fudone="${f.id}">做过了</button><button style="font-size:12px;color:var(--ink-3);margin-left:8px" data-fudrop="${f.id}">不用了</button></div>`;}
+  return `<div class="item"><span class="ico" style="color:var(--pen)">↺</span><div style="flex:1"><div class="it">${esc(f.content)}</div><div class="from"><span class="dot" style="background:${p.color}"></span>${esc(p.name)} · ${due?'<span style="color:var(--warn)">到时候了</span>':f.due.slice(5).replace('-','月')+'日'}</div></div><button style="font-size:12px;color:var(--ink-3)" data-fudone="${f.id}">做过了</button><button style="font-size:12px;color:var(--ink-3);margin-left:8px" data-fudrop="${f.id}">不用了</button></div>`;}
 
 function viewLists(){
-  const bs=S.blockers.filter(b=>P(b.pid));const open=bs.filter(b=>!b.solved).sort((a,b)=>a.first-b.first),done=bs.filter(b=>b.solved).sort((a,b)=>(b.solvedTs||0)-(a.solvedTs||0));
-  const ideas=allIdeas();const fus=activeProjects().flatMap(p=>p.followUps.filter(f=>!f.done)).sort((a,b)=>a.due<b.due?-1:1);
-  let h=header('清单','所有项目里的磕绊、灵感和待回访，都汇到这里。');
-  h+=`<div class="tabs"><button class="tab ${V.listTab==='blocks'?'on':''}" data-ltab="blocks">磕绊 ${open.length}</button><button class="tab ${V.listTab==='ideas'?'on':''}" data-ltab="ideas">灵感 ${ideas.length}</button><button class="tab ${V.listTab==='fu'?'on':''}" data-ltab="fu">待回访 ${fus.length}</button><button class="tab ${V.listTab==='done'?'on':''}" data-ltab="done">已解决 ${done.length}</button></div><div style="height:10px"></div>`;
-  if(V.listTab==='blocks')h+=open.map(blockItem).join('')||`<div class="empty"><span class="hand">眼下没有卡住的事</span>写记录时提到的困难，会自动出现在这里。</div>`;
-  if(V.listTab==='done')h+=done.map(blockItem).join('')||`<div class="empty">解决掉的磕绊会留在这里，回头看挺有成就感。</div>`;
-  if(V.listTab==='ideas')h+=ideas.map(ideaItem).join('')||`<div class="empty"><span class="hand">灵感池还是空的</span>天马行空的想法也写进记录里，${AN()}会帮你收好。</div>`;
-  if(V.listTab==='fu')h+=fus.map(fuItem).join('')||`<div class="empty">你说过"打算……""下周要……"的事，${AN()}会记在这里，到时候问你一句。</div>`;
+  const inCat=p=>V.lcat==='all'||p.cat===V.lcat;
+  const cats=CATS.filter(c=>S.projects.some(p=>p.cat===c));
+  if(V.lcat!=='all'&&!cats.includes(V.lcat))V.lcat='all';
+  const projs=S.projects.filter(p=>inCat(p)&&(!p.archived||V.lpid===p.id));
+  if(V.lpid!=='all'&&(!P(V.lpid)||!inCat(P(V.lpid))))V.lpid='all';
+  const ok=pid=>{const p=P(pid);return p&&inCat(p)&&(V.lpid==='all'||V.lpid===pid);};
+  const today=dkey(Date.now());
+  const bs=S.blockers.filter(b=>ok(b.pid));
+  const open=bs.filter(b=>!b.solved).sort((a,b)=>a.first-b.first),solved=bs.filter(b=>b.solved).sort((a,b)=>(b.solvedTs||0)-(a.solvedTs||0));
+  const fus=S.projects.filter(p=>ok(p.id)).flatMap(p=>p.followUps.filter(f=>!f.done)).sort((a,b)=>a.due<b.due?-1:1);
+  const ideasAll=allIdeas().filter(i=>ok(i.pid));const ideasLive=ideasAll.filter(i=>i.state==='new'||i.state==='star').sort((a,b)=>(b.state==='star')-(a.state==='star')||b.ts-a.ts);
+  const gains=allGains().filter(g=>ok(g.pid));
+  const nStuck=open.length,nTodo=fus.length,nIdea=ideasLive.length,nGain=gains.length;
+  const dueN=fus.filter(f=>f.due<=today).length,oldN=open.filter(b=>daysAgo(b.first)>=3).length;
+  let h=header('清单','你提到过的事，帮你分好了类。');
+  h+=`<div class="ltabs"><div class="lgroup"><span class="glabel">要处理的</span><button class="ltab ${V.lt==='stuck'?'on':''}" data-lt="stuck">卡着的<b>${nStuck}</b>${oldN?'<i class="hot"></i>':''}</button><button class="ltab ${V.lt==='todo'?'on':''}" data-lt="todo">说过要做的<b>${nTodo}</b>${dueN?'<i class="hot"></i>':''}</button></div>
+  <div class="lgroup"><span class="glabel">攒下来的</span><button class="ltab ${V.lt==='ideas'?'on':''}" data-lt="ideas">灵感<b>${nIdea}</b></button><button class="ltab ${V.lt==='gains'?'on':''}" data-lt="gains">收获<b>${nGain}</b></button></div></div>`;
+  h+=`<div class="filters"><div class="frow"><span class="flabel">类别</span><div class="tabs"><button class="tab sm ${V.lcat==='all'?'on':''}" data-lcat="all">全部</button>${cats.map(c=>`<button class="tab sm ${V.lcat===c?'on':''}" data-lcat="${c}">${c}</button>`).join('')}</div></div>
+  <div class="frow"><span class="flabel">项目</span><div class="tabs"><button class="tab sm ${V.lpid==='all'?'on':''}" data-lpid="all">全部</button>${projs.map(p=>`<button class="tab sm ${V.lpid===p.id?'on':''}" data-lpid="${p.id}"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</button>`).join('')}</div></div></div>`;
+  const filtered=V.lcat!=='all'||V.lpid!=='all';
+  const none=(big,small)=>`<div class="empty">${big?`<span class="hand">${big}</span>`:''}${small}</div>`;
+  if(V.lt==='stuck'){
+    h+=open.map(blockItem).join('')||none(filtered?'':'眼下没有卡住的事',filtered?'这个范围里没有卡着的事。':'写记录时提到的困难，会自动出现在这里，卡得最久的排在最前面。');
+    if(solved.length)h+=`<button class="fold" data-act="togglesolved">${V.showSolved?'收起':'展开'}已解决的 ${solved.length} 个 ${V.showSolved?'▴':'▾'}</button>`+(V.showSolved?solved.map(blockItem).join(''):'');
+  }
+  if(V.lt==='todo')h+=fus.map(fuItem).join('')||none(filtered?'':'没有说过要做的事',filtered?'这个范围里没有。':`你在记录里说"打算……""下周要……"，${AN()}会记在这里，到时候问你一句。`);
+  if(V.lt==='ideas'){
+    h+=ideasLive.map(ideaItem).join('')||none(filtered?'':'灵感池还是空的',filtered?'这个范围里没有新的灵感。':`天马行空的想法也写进记录里，${AN()}会帮你收好。点 ☆ 留着，不想要了就放下。`);
+    const rest=ideasAll.filter(i=>i.state==='project'||i.state==='drop');
+    if(rest.length)h+=`<button class="fold" data-act="toggleideas">${V.ideaAll?'收起':'看看'}变成项目和放下的 ${rest.length} 个 ${V.ideaAll?'▴':'▾'}</button>`+(V.ideaAll?rest.map(ideaItem).join(''):'');
+  }
+  if(V.lt==='gains'){
+    if(!gains.length)h+=none(filtered?'':'还没攒下收获',filtered?'这个范围里还没有收获。':'学到的、得到的、让你开心的事，会自动收在这里。哪天低落了，回来翻翻。');
+    else{let last='';gains.forEach(g=>{const m=dkey(g.ts).slice(0,7);if(m!==last){h+=`<div class="day">${m.replace('-','年')}月</div>`;last=m;}h+=gainItem(g);});}
+  }
   return h;
 }
 function viewSettings(){
@@ -1041,7 +1103,13 @@ document.addEventListener('click',ev=>{
   const d=t.dataset;
   if(d.nav){V.tab=d.nav;V.replyOpen=null;render();scrollTo(0,0);return;}
   if(d.filter){V.filter=d.filter;render();return;}
-  if(d.ltab){V.listTab=d.ltab;render();return;}
+  if(d.lt){V.lt=d.lt;render();return;}
+  if(d.golist){const p=P(d.golist);V.tab='lists';V.lt='gains';V.lcat='all';V.lpid=d.golist;render();scrollTo(0,0);return;}
+  if(d.lcat){V.lcat=d.lcat;V.lpid='all';render();return;}
+  if(d.lpid){V.lpid=d.lpid;render();return;}
+  if(d.istar){const i=findItem(d.istar);if(i){i.ideaState=i.ideaState==='star'?'new':'star';save();render();toast(i.ideaState==='star'?'留着了':'取消留着');}return;}
+  if(d.idrop){const i=findItem(d.idrop);if(i){i.ideaState='drop';save();render();toast('放下了，想要可以再捡回来');}return;}
+  if(d.ireset){const i=findItem(d.ireset);if(i){i.ideaState='new';i.toPid=null;save();render();}return;}
   if(d.open){V.tab='project';V.pid=d.open;render();scrollTo(0,0);return;}
   if(d.pick){draft.pid=d.pick;document.querySelectorAll('[data-pick]').forEach(b=>b.classList.toggle('on',b.dataset.pick===d.pick));return;}
   if(d.cpick){const [k,pid]=d.cpick.split('|');cdraft.items[+k].pid=pid;renderConfirm();return;}
@@ -1062,7 +1130,7 @@ document.addEventListener('click',ev=>{
   if(d.solveop){const b=B(d.solveop);if(b){b.solved=true;b.solvedTs=Date.now();S.opener.dismissed=true;save();render();toast('太好了，又解决一个');}return;}
   if(d.fudone||d.fudrop){const id=d.fudone||d.fudrop;S.projects.forEach(p=>{const f=p.followUps.find(x=>x.id===id);if(f){if(d.fudone)f.done=true;else p.followUps=p.followUps.filter(x=>x.id!==id);}});
     if(S.opener&&S.opener.ref===id)S.opener.dismissed=true;save();render();toast(d.fudone?'好，记下了':'不再问这件事');return;}
-  if(d.idea2proj){projSheet(null,d.idea2proj.slice(0,20));return;}
+  if(d.idea2proj){const i=findItem(d.idea2proj);if(i){projSheet(null,i.content.slice(0,20));pdraft.fromIdea=i.id;$('#pdesc').value=i.content;}return;}
   if(d.editproj){projSheet(d.editproj);return;}
   if(d.arch){const p=P(d.arch);p.archived=!p.archived;save();render();toast(p.archived?'已归档':'已恢复');return;}
   if(d.delproj){if(confirm('删除项目会同时删除它的全部记录，确定？')){const id=d.delproj;S.projects=S.projects.filter(p=>p.id!==id);
@@ -1072,6 +1140,8 @@ document.addEventListener('click',ev=>{
   if(d.tone){S.settings.tone=d.tone;save();render();toast('说话风格：'+TONES[d.tone].label);return;}
   const act=d.act;if(!act)return;
   if(act==='close'){closeSheet();return;}
+  if(act==='togglesolved'){V.showSolved=!V.showSolved;render();return;}
+  if(act==='toggleideas'){V.ideaAll=!V.ideaAll;render();return;}
   if(act==='voice'){startVoice();return;}
   if(act==='voicestop'){stopVoice();return;}
   if(act==='voicecancel'){cancelVoice();return;}
@@ -1097,7 +1167,8 @@ document.addEventListener('click',ev=>{
     const name=$('#pname').value.trim();if(!name){toast('给项目起个名字');return;}
     const desc=$('#pdesc').value.trim();
     if(pdraft.id){Object.assign(P(pdraft.id),{name,desc,cat:pdraft.cat,color:pdraft.color});}
-    else{const p=newProject({name,desc,cat:pdraft.cat,color:pdraft.color});V.tab='project';V.pid=p.id;}
+    else{const p=newProject({name,desc,cat:pdraft.cat,color:pdraft.color});V.tab='project';V.pid=p.id;
+      if(pdraft.fromIdea){const i=findItem(pdraft.fromIdea);if(i){i.ideaState='project';i.toPid=p.id;}}}
     save();closeSheet();render();toast(pdraft.id?'已保存':'项目已创建');return;
   }
   if(act==='savecfg'||act==='testcfg'){
