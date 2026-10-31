@@ -313,6 +313,7 @@ textarea.inp{min-height:150px;resize:vertical;line-height:1.7;background:#fff re
 .cnew button[type=button]{color:var(--ink-3);font-weight:400}
 .primary.danger{background:var(--warn)}
 /* ===== v3.14：手记目录 / 复盘独立 ===== */
+/* v3.16：类别改为工作/爱好/学习/副业/家庭/休闲，首页按类别筛选 */
 /* v3.15：写一笔精简——输入框置顶，项目选择收起 */
 nav .in{grid-template-columns:repeat(5,1fr)}
 .rk{font-family:var(--sans);font-size:11px;font-weight:600;color:#fff;background:var(--pen);border-radius:4px;padding:0 5px;line-height:17px;flex:none}
@@ -403,7 +404,10 @@ nav .in{grid-template-columns:repeat(5,1fr)}
 /* ============ 常量 ============ */
 const KEY='xmsj_v1';
 const COLORS=['#3E6FB0','#2F8F7A','#C0603A','#8A5BB5','#C79A24','#4F5D6E','#C2457A','#6C8F2E'];
-const CATS=['工作','爱好','学习','副业','生活','其他'];
+const CATS=['工作','爱好','学习','副业','家庭','休闲'];
+const CAT_MAP={'生活':'家庭'};
+// 正在用的类别：按固定顺序，旧数据里不在六类中的也保留显示
+function catsInUse(ps){const have=[...new Set(ps.map(p=>p.cat))];return [...CATS.filter(c=>have.includes(c)),...have.filter(c=>c&&!CATS.includes(c))];}
 const TYPES={progress:'进展',gain:'收获',cost:'付出',blocker:'磕绊',idea:'灵感',note:'其他'};
 const MOODS={good:'不错',neutral:'平稳',low:'有点低落',very_low:'很低落'};
 const TONES={
@@ -431,11 +435,11 @@ function load(){
   return d.v===3?fixup(d):migrate(d);
 }
 function fixup(d){const b=blank();(d.reviews||[]).forEach(r=>{if(!r.kind){r.kind='week';r.period=r.week||weekKey(r.ts);r.seen=true;}});d.settings={...b.settings,...d.settings};['logs','blockers','reviews','feedback','memory'].forEach(k=>d[k]=d[k]||[]);d.deleted=d.deleted||{};
-  d.projects.forEach(p=>{p.followUps=p.followUps||[];p.profiling=false;});return d;}
+  d.projects.forEach(p=>{p.followUps=p.followUps||[];p.profiling=false;if(CAT_MAP[p.cat])p.cat=CAT_MAP[p.cat];if(!CATS.includes(p.cat))p.cat=guessCat(p.name+' '+(p.desc||''));});return d;}
 function migrate(d){
   const n=blank();const os=d.settings||{};
   Object.assign(n.settings,{preset:os.preset||'deepseek',base:os.base||n.settings.base,model:os.model==='deepseek-chat'?'deepseek-flash':(os.model||n.settings.model),key:os.key||'',nick:os.nick||''});
-  n.projects=(d.projects||[]).map(p=>({id:p.id,name:p.name,desc:p.goal||'',cat:p.cat||'其他',color:p.color||COLORS[0],created:p.created||Date.now(),archived:!!p.archived,
+  n.projects=(d.projects||[]).map(p=>({id:p.id,name:p.name,desc:p.goal||'',cat:CATS.includes(CAT_MAP[p.cat]||p.cat)?(CAT_MAP[p.cat]||p.cat):guessCat(p.name+' '+(p.goal||'')),color:p.color||COLORS[0],created:p.created||Date.now(),archived:!!p.archived,
     profile:p.summary||'',profileTs:p.summary?Date.now():0,followUps:[],lastAsked:0,spendAlerted:''}));
   const moodMap={'开心':'good','兴奋':'good','平稳':'neutral','疲惫':'low','焦虑':'low','沮丧':'low'};
   (d.entries||[]).forEach(e=>{
@@ -1493,15 +1497,17 @@ function viewHome(){
   const ls=filteredLogs();
   const today=dkey(Date.now());
   if(V.filter==='all'&&!ls.some(l=>dkey(l.ts)===today))h+=`<button class="dtoday" data-act="compose"><b>今天</b>还没写<span>写一笔 →</span></button>`;
-  if(!ls.length){h+=`<div class="empty"><span class="hand">这里还空着</span>${V.filter==='all'?'点右下角「写一笔」，几个项目混着写也行。':'这个项目还没有记录。'}</div>`;return h;}
+  if(!ls.length){h+=`<div class="empty"><span class="hand">这里还空着</span>${V.filter==='all'?'点右下角「写一笔」，几个项目混着写也行。':'这个类别还没有记录。'}</div>`;return h;}
   h+=directory(ls);
   return h;
 }
 const RV_NEWNAME={day:'今天的复盘',week:'这周的复盘',month:'这个月的复盘'};
 const RV_KNAME={day:'每日复盘',week:'每周复盘',month:'每月复盘'};
 const RV_TAG={day:'日',week:'周',month:'月'};
-function filteredLogs(){return S.logs.filter(l=>V.filter==='all'||logPids(l).includes(V.filter)||(l.forcePid===V.filter&&!l.items.length)).sort((a,b)=>b.ts-a.ts);}
-function filterTabs(act){return `<div class="tabs" style="margin-top:14px"><button class="tab ${V.filter==='all'?'on':''}" data-filter="all">全部</button>${act.map(p=>`<button class="tab ${V.filter===p.id?'on':''}" data-filter="${p.id}"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</button>`).join('')}</div>`;}
+function logCats(l){const ids=logPids(l).length?logPids(l):(l.forcePid?[l.forcePid]:[]);return ids.map(id=>P(id)?.cat).filter(Boolean);}
+function filteredLogs(){return S.logs.filter(l=>V.filter==='all'||logCats(l).includes(V.filter)).sort((a,b)=>b.ts-a.ts);}
+function filterTabs(act){const cs=catsInUse(act);if(V.filter!=='all'&&!cs.includes(V.filter))V.filter='all';
+  return `<div class="tabs" style="margin-top:14px"><button class="tab ${V.filter==='all'?'on':''}" data-filter="all">全部</button>${cs.map(c=>`<button class="tab ${V.filter===c?'on':''}" data-filter="${esc(c)}">${esc(c)}</button>`).join('')}</div>`;}
 function logPreview(l){const t=String(l.raw||'').replace(/\s+/g,' ').trim();if(t)return t;const i=(l.items||[])[0];return i?i.content:((l.photos||[]).length?'（照片）':'');}
 // 手记目录：年 → 月（可折叠）→ 日
 function directory(ls){
@@ -1528,10 +1534,10 @@ function viewDay(){
   const k=V.day;const all=filteredLogs();const ls=all.filter(l=>dkey(l.ts)===k).sort((a,b)=>a.ts-b.ts);
   const keys=[...new Set(all.map(l=>dkey(l.ts)))];const i=keys.indexOf(k);
   const newer=i>0?keys[i-1]:(i<0?keys.filter(x=>x>k).pop():null),older=i>=0?keys[i+1]:keys.find(x=>x<k);
-  const d=new Date(k);const n=daysAgo(k);const fp=V.filter!=='all'&&P(V.filter);
+  const d=new Date(k);const n=daysAgo(k);const fp=V.filter!=='all'?V.filter:'';
   let h=`<div class="dtop"><button class="back" data-nav="home">← 目录</button><div class="dnav"><button ${older?`data-day="${older}"`:'disabled'} aria-label="前一天">‹</button><button ${newer?`data-day="${newer}"`:'disabled'} aria-label="后一天">›</button></div></div>`;
-  h+=`<div class="dayh"><h2>${d.getMonth()+1}月${d.getDate()}日 · 周${WEEK[d.getDay()]}</h2><div class="y"><span>${d.getFullYear()}${n===0?' · 今天':n===1?' · 昨天':''} · ${ls.length} 条</span>${fp?`<span class="fpill"><span class="dot" style="background:${fp.color}"></span>只看 ${esc(fp.name)}<button data-filter="all" aria-label="看全部">×</button></span>`:''}</div></div>`;
-  if(!ls.length)h+=`<div class="empty"><span class="hand">这天没有记录</span>${fp?'这个项目在这天没写过。':''}</div>`;
+  h+=`<div class="dayh"><h2>${d.getMonth()+1}月${d.getDate()}日 · 周${WEEK[d.getDay()]}</h2><div class="y"><span>${d.getFullYear()}${n===0?' · 今天':n===1?' · 昨天':''} · ${ls.length} 条</span>${fp?`<span class="fpill">只看 ${esc(fp)}<button data-filter="all" aria-label="看全部">×</button></span>`:''}</div></div>`;
+  if(!ls.length)h+=`<div class="empty"><span class="hand">这天没有记录</span>${fp?'这个类别在这天没写过。':''}</div>`;
   h+=ls.map(logCard).join('');
   const rv=rvFind('day',k);
   if(rv&&rv.status!=='deleted')h+=`<button class="dayrv" data-rid="${rv.id}"><span class="rk">日</span><b>这天的复盘</b><i>${rv.status==='pending'?'正在写……':'打开 →'}</i>${rv.status==='done'?`<p>${esc(rv.text.replace(/\s+/g,' '))}</p>`:''}</button>`;
@@ -1665,7 +1671,7 @@ function fuItem(f){const p=S.projects.find(x=>x.followUps.includes(f))||{name:''
 
 function viewLists(){
   const inCat=p=>V.lcat==='all'||p.cat===V.lcat;
-  const cats=CATS.filter(c=>S.projects.some(p=>p.cat===c));
+  const cats=catsInUse(S.projects);
   if(V.lcat!=='all'&&!cats.includes(V.lcat))V.lcat='all';
   const projs=S.projects.filter(p=>inCat(p)&&(!p.archived||V.lpid===p.id));
   if(V.lpid!=='all'&&(!P(V.lpid)||!inCat(P(V.lpid))))V.lpid='all';
@@ -1745,7 +1751,7 @@ function composeSheet(pid,editId,opts={}){
   const act=activeProjects();
   if(!act.length){projSheet();return;}
   const e=editId?L(editId):null;
-  const ctx=pid||(V.tab==='project'?V.pid:(V.filter!=='all'?V.filter:null));
+  const catPs=V.filter!=='all'?act.filter(p=>p.cat===V.filter):[];const ctx=pid||(V.tab==='project'?V.pid:(catPs.length===1?catPs[0].id:null));
   draft={pid:e?(e.forcePid||'auto'):(ctx||(act.length>1?'auto':act[0].id)),editId,voiceEmotion:'',photos:[]};
   openSheet(`<h3>${e?'编辑记录':'写一笔'}<button data-act="close">取消</button></h3>
   ${e?'':'<div id="cop"></div>'}
@@ -1822,7 +1828,10 @@ function linkSheet(id){
   <button class="ghost" data-idea2proj="${id}">都不是，用它新建一个项目</button>`);
 }
 let pdraft={};
-function newProject({name,desc='',cat='其他',color}){const p={id:uid('p'),name,desc,cat,color:color||COLORS[S.projects.length%COLORS.length],created:Date.now(),archived:false,profile:'',profileTs:0,followUps:[],lastAsked:0,spendAlerted:''};S.projects.push(p);return p;}
+// 新建项目没指定类别时按名字猜一个，猜不出归「工作」，之后可在项目里改
+function guessCat(n){n=String(n||'');const R=[['家庭',/家|孩子|娃|宝宝|老人|父母|爸|妈|老公|老婆|育儿|家务|装修|房/],['学习',/学|课|考|读书|证|英语|语言|培训|研究生|论文/],['副业',/副业|兼职|小红书|公众号|视频号|抖音|店|接单|变现|带货/],['休闲',/旅|游|电影|追剧|玩|游戏|徒步|露营|放松|休闲/],['爱好',/吉他|琴|画|摄影|跑|健身|瑜伽|烘焙|做饭|书法|唱|舞|球|手工|花/]];
+  for(const [c,re] of R)if(re.test(n))return c;return '工作';}
+function newProject({name,desc='',cat,color}){cat=cat||guessCat(name+' '+desc);const p={id:uid('p'),name,desc,cat,color:color||COLORS[S.projects.length%COLORS.length],created:Date.now(),archived:false,profile:'',profileTs:0,followUps:[],lastAsked:0,spendAlerted:''};S.projects.push(p);return p;}
 function projSheet(editId,name){
   const p=editId?P(editId):null;
   pdraft={id:editId,color:p?.color||COLORS[S.projects.length%COLORS.length],cat:p?.cat||'工作'};
@@ -1830,7 +1839,7 @@ function projSheet(editId,name){
   <label class="f">项目名</label><input class="inp" id="pname" value="${esc(p?.name||name||'')}" placeholder="比如：公众号写作、学吉他、Q4 产品上线" maxlength="20">
   <label class="f">一句话描述</label><input class="inp" id="pdesc" value="${esc(p?.desc||'')}" placeholder="比如：自学古典吉他，年底前弹会 5 首歌">
   <div class="hint">写具体一点，${AN()}拆分混写的记录时更不容易分错。</div>
-  <label class="f">类别</label><div class="seg">${CATS.map(c=>`<button class="${pdraft.cat===c?'on':''}" data-pcat="${c}">${c}</button>`).join('')}</div>
+  <label class="f">类别</label><div class="seg">${[...CATS,...(CATS.includes(pdraft.cat)?[]:[pdraft.cat])].map(c=>`<button class="${pdraft.cat===c?'on':''}" data-pcat="${esc(c)}">${esc(c)}</button>`).join('')}</div>
   <label class="f">颜色</label><div class="colors">${COLORS.map(c=>`<button style="--c:${c}" class="${pdraft.color===c?'on':''}" data-pcolor="${c}" aria-label="颜色"></button>`).join('')}</div>
   <button class="primary" data-act="saveproj">${p?'保存':'创建项目'}</button>
   ${p?`<button class="ghost danger" data-delproj="${p.id}">删除项目及其全部记录</button>`:''}`);
