@@ -288,6 +288,8 @@ textarea.inp{min-height:150px;resize:vertical;line-height:1.7;background:#fff re
 .phs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .phs .ph{width:76px;height:76px}
 .phbig{width:100%;border-radius:12px;display:block}
+.phmiss{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:6px;font-size:13px;color:var(--warn)}
+.phmiss button{color:var(--pen);font-weight:600;font-size:13px}
 </style>
 </head>
 <body>
@@ -510,7 +512,7 @@ async function runLog(l){
   undoLog(l);
   l.status='splitting';l.stage='split';l.err='';l.reply='';save();render();
   try{
-    if((l.photos||[]).length&&!l.photoText&&asrKey()){l.stage='look';l.looking=true;render();
+    if((l.photos||[]).length&&!l.photoText&&canSee()){l.stage='look';l.looking=true;render();
       try{await describePhotos(l);l.photoErr='';}catch(e){l.photoErr=e.message;}
       l.looking=false;save();render();}
     const r=await aiSplit(l);
@@ -1133,26 +1135,40 @@ function shrink(file){return new Promise(res=>{const fr=new FileReader();fr.onlo
   im.onload=()=>{try{const k=Math.min(1,1280/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);
     c.getContext('2d').drawImage(im,0,0,c.width,c.height);const out=c.toDataURL('image/jpeg',0.78);res(out&&out.length>30?out:src);}catch(e){res(src);}};
   im.onerror=()=>res(src);im.src=src;};fr.onerror=()=>res('');fr.readAsDataURL(file);});}
-const VL_MODELS=['qwen3-vl-flash','qwen-vl-plus'];
+const VL_MODELS=['qwen3-vl-flash','qwen3-vl-plus','qwen-vl-plus'];
+// 谁能看照片：① 主设置里的模型（DeepSeek 的 deepseek-flash 已支持看图）② 百炼视觉模型
+function mainUrl(){const b=S.settings.base.replace(/\/+$/,'');return /\/chat\/completions$/.test(b)?b:b+'/chat/completions';}
+function visionRoutes(){const st=S.settings,r=[];
+  if(st.key&&!(st.noVision||{})[st.model])r.push({name:'main',url:mainUrl(),key:st.key,model:st.model});
+  const k=asrKey();if(k)(st.vlModel?[st.vlModel,...VL_MODELS.filter(m=>m!==st.vlModel)]:VL_MODELS).forEach(m=>r.push({name:'vl',url:ASR_URL,key:k,model:m}));
+  return r;}
+function canSee(){return visionRoutes().length>0;}
 async function describePhotos(l){
-  const key=asrKey();if(!key)return;
-  const imgs=(await Promise.all(l.photos.map(p=>phGet(p.id)))).filter(Boolean);if(!imgs.length)return;
+  const routes=visionRoutes();if(!routes.length)throw new Error('现在没有能看图的模型：主设置里的模型不支持看图，也没填百炼 Key。');
+  const imgs=(await Promise.all(l.photos.map(p=>phGet(p.id)))).filter(Boolean);if(!imgs.length)throw new Error('照片在本机找不到了');
   const content=[{type:'text',text:`用户在自己的项目日志里附了 ${imgs.length} 张照片${l.raw?`，同时写了：「${l.raw.slice(0,300)}」`:''}。
-逐张客观描述照片里有什么，每张一两句。跟做事、学习、花钱有关的细节要照抄：上面的文字、数字、金额、日期、进度、作品的样子。
+逐张客观描述照片里有什么，每张两三句。照片里的文字要尽量照抄：标题、课程名、讲师、章节目录、说明书上的步骤和参数、小票金额、日期、进度、报错信息。作品类照片说清楚做到了什么样子。
 不猜测、不评价、不给建议。格式：图1：……（换行）图2：……`},...imgs.map(u=>({type:'image_url',image_url:{url:u}}))];
-  let last='';
-  for(const model of (S.settings.vlModel?[S.settings.vlModel]:VL_MODELS)){
-    const r=await fetch(ASR_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model,messages:[{role:'user',content}],temperature:0.2})});
-    if(r.ok){const j=await r.json();const t=(j.choices?.[0]?.message?.content||'').trim();if(t){l.photoText=t.slice(0,800);S.settings.vlModel=model;return;}}
-    let m='';try{m=(await r.json()).error?.message||'';}catch(e){}last=r.status+(m?'：'+m:'');
-    if(r.status===401)break;
+  const errs=[];
+  for(const rt of routes){
+    const body={model:rt.model,messages:[{role:'user',content}],temperature:0.2};
+    if(/deepseek\.com/.test(rt.url))body.thinking={type:'disabled'};
+    let r;try{r=await fetch(rt.url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+rt.key},body:JSON.stringify(body)});}
+    catch(e){errs.push((rt.name==='main'?'主模型':rt.model)+' 连不上');continue;}
+    if(r.ok){const j=await r.json();const t=(j.choices?.[0]?.message?.content||'').trim();
+      if(t){l.photoText=t.slice(0,1200);l.photoBy=rt.model;if(rt.name==='vl')S.settings.vlModel=rt.model;return;}errs.push(rt.model+' 没返回内容');continue;}
+    let m='';try{m=(await r.json()).error?.message||'';}catch(e){}
+    errs.push((rt.name==='main'?'主模型 '+rt.model:'百炼 '+rt.model)+' '+r.status+(m?'：'+m.slice(0,80):''));
+    // 主模型明确不支持图片（400/422）→ 记住，下次直接走百炼
+    if(rt.name==='main'&&(r.status===400||r.status===422)){S.settings.noVision={...(S.settings.noVision||{}),[rt.model]:true};save();}
+    if(rt.name==='vl'&&r.status===401)break;
   }
-  throw new Error('看照片没成功（'+last+'）');
+  throw new Error('看照片没成功：'+errs.join('；'));
 }
 function phRow(){const el=$('#phrow');if(!el||!draft)return;const ps=draft.photos||[];
   el.innerHTML=ps.map((p,i)=>`<span class="ph"><img src="${p.data}" alt="照片${i+1}"><button type="button" data-phrm="${i}" aria-label="去掉这张">×</button></span>`).join('')+
   (ps.length<MAX_PH?`<button type="button" class="phadd" data-act="addphoto"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9Zm3 5a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/></svg><span>${ps.length?'再加':'加照片'}</span></button>`:'')+
-  (ps.length&&!asrKey()?`<span class="vhint err" style="flex-basis:100%">还没有百炼 Key：照片会存下，但${AN()}看不到内容。到「设置 → 语音和照片」填一下。</span>`:'');}
+  (ps.length&&!canSee()?`<span class="vhint err" style="flex-basis:100%">现在的模型看不了图：照片会存下，但${AN()}看不到内容。到「设置」把服务商换成 DeepSeek，或填上百炼 Key。</span>`:'');}
 async function addPhotos(files){draft.photos=draft.photos||[];const room=MAX_PH-draft.photos.length;
   const fs=[...files].filter(f=>/^image\//.test(f.type)||/\.(jpe?g|png|heic|heif|webp|gif)$/i.test(f.name)).slice(0,room);
   if(files.length>room)toast('一条最多 '+MAX_PH+' 张');
@@ -1355,7 +1371,7 @@ function logCard(l){
   return `<article class="entry" style="--c:${first.color};--bar:${bar}">
   <div class="ehead"><span class="pns">${names}</span><span class="tm">${hm(l.ts)}</span></div>
   ${l.raw?`<div class="etext">${esc(l.raw)}</div>`:''}
-  ${(l.photos||[]).length?`<div class="phs">${l.photos.map((p,i)=>`<button class="ph" data-phview="${p.id}" aria-label="看大图"><img data-ph="${p.id}" alt="照片${i+1}"></button>`).join('')}</div>${l.photoErr?`<div class="vhint err" style="margin-top:4px">${esc(l.photoErr)}</div>`:''}`:''}
+  ${(l.photos||[]).length?`<div class="phs">${l.photos.map((p,i)=>`<button class="ph" data-phview="${p.id}" aria-label="看大图"><img data-ph="${p.id}" alt="照片${i+1}"></button>`).join('')}</div>${!l.photoText&&!busy?`<div class="phmiss"><span>${esc(l.photoErr||AN()+'还没看过这些照片')}</span><button data-relook="${l.id}">让${AN()}看看照片</button></div>`:''}`:''}
   ${chips?`<div class="chips">${chips}</div>`:''}
   ${note}${th?`<div class="thread">${th}</div>`:''}${rb}
   ${busy?'':`<div class="eacts">${l.status==='done'?`<button data-replyopen="${l.id}">接着聊</button><button data-rereply="${l.id}">换个回应</button>`:''}${l.status==='error'?`<button style="color:var(--pen)" data-retry="${l.id}">重试</button>`:''}<button data-edit="${l.id}">编辑</button><button data-del="${l.id}">删除</button></div>`}
@@ -1454,7 +1470,7 @@ function viewSettings(){
   <div class="card"><h3 style="font-size:15px;margin-bottom:4px">打开时</h3>
   <label class="toggle"><input type="checkbox" ${st.openCompose!==false?'checked':''} data-check="openCompose"> 一打开就进入「写一笔」</label>
   <p class="hint">${AN()}的关心和新写好的复盘会在「写一笔」顶部提一句；点「取消」就回到首页。离开超过 10 分钟再回来，也会直接进入。没写完关掉的话，下次打开文字还在。</p></div>
-  <div class="card"><h3 style="font-size:15px;margin-bottom:4px">语音和照片</h3><p>在「写一笔」里点麦克风说话，转成文字后再提交。录音只用来转文字，不会保存。<br>照片也用下面这个百炼 Key：${AN()}会先看一眼照片（小票上的金额、作品、截图里的字），再一起整理。照片存在这台手机的浏览器里，导出备份时会一起带上。</p>
+  <div class="card"><h3 style="font-size:15px;margin-bottom:4px">语音和照片</h3><p>在「写一笔」里点麦克风说话，转成文字后再提交。录音只用来转文字，不会保存。<br>照片：${AN()}会先看一眼照片（课程封面、说明书、小票上的金额、截图里的字），再一起整理。服务商选 DeepSeek 时直接用上面的 Key 就能看图；其他服务商会改用下面的百炼 Key。照片存在这台手机的浏览器里，导出备份时会一起带上。</p>
   <label class="f">识别方式</label><div class="seg">${[['auto','自动'],['qwen','通义千问'],['browser','浏览器自带']].map(([k,v])=>`<button class="${(st.voice||'auto')===k?'on':''}" data-voice="${k}">${v}</button>`).join('')}</div>
   <p class="hint">通义千问最稳，需要阿里云百炼的 API Key；浏览器自带的免费，但国内常常连不上。自动：有百炼 Key 就用通义千问。</p>
   <label class="f">阿里云百炼 API Key</label><input class="inp" id="s_asrkey" type="password" value="${esc(st.asrKey||'')}" placeholder="${st.preset==='qwen'?'上面服务商选了通义千问，可以不填':'sk-…'}" autocomplete="off" data-setting="asrKey">
@@ -1612,6 +1628,7 @@ document.addEventListener('click',ev=>{
     S.projects.forEach(p=>{const f=p.followUps.find(x=>x.id===id);if(f){hit=true;f.done=true;f.doneTs=Date.now();if(d.fudrop)f.dropped=true;}});
     if(S.opener&&S.opener.ref===id)S.opener.dismissed=true;save();render();
     toast(!hit?'这件事已经被更新过了，到「清单」里看看':d.fudone?'好，记下了':'不再问这件事');return;}
+  if(d.relook){const l=L(d.relook);if(l){if(S.settings.noVision)delete S.settings.noVision[S.settings.model];if(!canSee()){toast('先到「设置」换成 DeepSeek 或填百炼 Key');return;}l.photoText='';l.photoErr='';runLog(l);}return;}
   if(d.phrm!==undefined){draft.photos.splice(+d.phrm,1);phRow();return;}
   if(d.phview){phGet(d.phview).then(src=>{if(!src){toast('这张照片在本机找不到了');return;}openSheet(`<h3>照片<button data-act="close">关闭</button></h3><img class="phbig" src="${src}" alt="照片">`);});return;}
   if(d.ilink){linkSheet(d.ilink);return;}
