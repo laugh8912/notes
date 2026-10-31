@@ -273,6 +273,21 @@ textarea.inp{min-height:150px;resize:vertical;line-height:1.7;background:#fff re
 .memitem span{flex:1}
 .memitem button{font-size:12px;color:var(--ink-2)}
 .item .from .lk{color:var(--ink-3);margin-left:2px}
+.cop{background:var(--paper);border-radius:12px;padding:9px 12px;margin:0 0 12px;font-size:14px;line-height:1.6;color:var(--ink)}
+.cop b{font-family:"LXGW WenKai GB Screen",serif;color:var(--pen);font-weight:600;margin-right:6px}
+.cop button{font-size:12px;color:var(--ink-3);margin-left:8px;text-decoration:underline;text-underline-offset:3px}
+.cop.wait{color:var(--ink-3)}
+.cop.rv b{color:var(--gold)}
+.phrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 8px}
+.phrow:empty{display:none}
+.phadd{display:flex;align-items:center;gap:6px;border:1.5px solid var(--pen);color:var(--pen);border-radius:999px;padding:6px 13px;font-size:14px;font-weight:600;background:transparent}
+.ph{position:relative;width:64px;height:64px;border-radius:10px;overflow:hidden;background:var(--paper);flex:none;padding:0;border:0}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ph button{position:absolute;top:2px;right:2px;width:22px;height:22px;border-radius:50%;background:rgba(29,39,51,.65);color:#fff;font-size:15px;line-height:22px;padding:0}
+.ph.gone::after{content:'照片不在本机';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--ink-3);text-align:center}
+.phs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.phs .ph{width:76px;height:76px}
+.phbig{width:100%;border-radius:12px;display:block}
 </style>
 </head>
 <body>
@@ -425,6 +440,8 @@ ${TONES[st.tone||'mid'].line}
 }
 function memoryText(){const m=(S.memory||[]);if(!m.length)return '';
   return '\n\n【你记得的关于 TA 的事（TA 亲口说的，要遵守、要用上）】\n'+m.map(x=>'- '+x.text).join('\n');}
+// 原文 + 照片内容（给 AI 看的版本）
+function rawOf(l){const n=(l.photos||[]).length;return (l.raw||'')+(n?`${l.raw?'\n':''}【附了 ${n} 张照片】${l.photoText||'（看不到照片内容）'}`:'');}
 function threadText(l,max=6,len=80){const t=(l.thread||[]).filter(m=>!m.err&&m.role!=='memo');if(!t.length)return '';
   return '｜之后你们接着聊：'+t.slice(-max).map(m=>(m.role==='user'?'TA：':'你：')+m.text.slice(0,len)).join(' / ');}
 // 拆分、档案这类"只输出 JSON"的任务不带完整人设：只留名字和称呼，避免"口语聊天"和"只输出 JSON"互相打架，也省 token
@@ -459,7 +476,7 @@ async function aiSplit(l){
 1. 一段话可能涉及多个项目，按项目拆开。一个项目也可以拆成多条。
 2. 每条的 type 只能是：progress 进展 / gain 收获 / cost 付出 / blocker 磕绊 / idea 灵感 / note 其他
 3. content 用一句话复述用户原意，保留关键细节和数字，不润色、不添加。
-4. 时间和金钱只在用户明确说出时填写："两个半小时"→150，"花了380"→380；"一下午""挺贵的"这类不确定的填 null。时间和金钱可以填在对应的那条上，不必单独拆一条 cost。
+4. 时间和金钱只在用户明确说出时填写（照片里清楚印着的金额，比如小票、订单截图上的实付金额，也算明确）："两个半小时"→150，"花了380"→380；"一下午""挺贵的"这类不确定的填 null。时间和金钱可以填在对应的那条上，不必单独拆一条 cost。
 5. 如果用户说某个问题解决了，并且能对上未解决磕绊里的某一条，填 resolves_blocker_id。
 6. 如果用户又提到某个未解决磕绊、但没有解决（比如"还是报错""还没搞定"），填 mentions_blocker_id，这条的 type 用 blocker，代码会更新原磕绊，不会重复新建。
 7. 对不上任何项目的内容：像是新项目就填 new_project_suggestion，否则 project_id 填 null。
@@ -472,7 +489,7 @@ async function aiSplit(l){
   const user=`今天：${dkey(l.ts)}（周${WEEK[new Date(l.ts).getDay()]}）
 项目列表：${JSON.stringify(projects)}
 未解决磕绊：${JSON.stringify(open)}
-用户原文：${l.raw}${l.voiceEmotion&&l.voiceEmotion!=='neutral'?`
+用户原文：${rawOf(l)}${l.voiceEmotion&&l.voiceEmotion!=='neutral'?`
 （这段是语音转的文字，语音里听出的情绪是 ${l.voiceEmotion}，判断 mood 时可以参考，但以内容为准）`:''}`;
   const out=parseJSON(await chat([{role:'system',content:sys},{role:'user',content:user}],0.2,{json:true}));
   const ids=new Set(act.map(p=>p.id)),openIds=new Set(open.map(b=>b.id));
@@ -484,7 +501,7 @@ async function aiSplit(l){
     const men=!res&&openIds.has(i.mentions_blocker_id)?i.mentions_blocker_id:null;
     return {id:uid('i'),pid,suggest:sug,type:TYPES[i.type]?i.type:'note',content:String(i.content),minutes:num(i.time_minutes),money:num(i.money_yuan),resolves:res,mentions:men};
   });
-  if(!items.length)items=[{id:uid('i'),pid:l.forcePid||null,suggest:null,type:'note',content:l.raw.slice(0,80),minutes:null,money:null,resolves:null,mentions:null}];
+  if(!items.length)items=[{id:uid('i'),pid:l.forcePid||null,suggest:null,type:'note',content:rawOf(l).slice(0,80),minutes:null,money:null,resolves:null,mentions:null}];
   return {items,mood:MOODS[out.mood]?out.mood:'neutral',needsConfirm:!!out.needs_confirm,question:out.question||''};
 }
 
@@ -493,6 +510,9 @@ async function runLog(l){
   undoLog(l);
   l.status='splitting';l.stage='split';l.err='';l.reply='';save();render();
   try{
+    if((l.photos||[]).length&&!l.photoText&&asrKey()){l.stage='look';l.looking=true;render();
+      try{await describePhotos(l);l.photoErr='';}catch(e){l.photoErr=e.message;}
+      l.looking=false;save();render();}
     const r=await aiSplit(l);
     Object.assign(l,{items:r.items,mood:r.mood,question:r.question});
     if(r.needsConfirm||l.items.some(i=>!i.pid)){l.status='confirm';save();render();openConfirm(l.id);return;}
@@ -507,7 +527,7 @@ async function commitLog(l){
   const kept=l.items.filter(i=>i.pid&&P(i.pid));
   if(!kept.length){
     // 对应的项目可能刚被删掉：保留原文，转成"待归类"，让用户重新选项目，不删除
-    l.items=[{id:uid('i'),pid:null,suggest:null,type:'note',content:l.raw.slice(0,200),minutes:null,money:null,resolves:null,mentions:null}];
+    l.items=[{id:uid('i'),pid:null,suggest:null,type:'note',content:rawOf(l).slice(0,200),minutes:null,money:null,resolves:null,mentions:null}];
     l.forcePid=null;l.status='confirm';l.question='这条没找到对应的项目（可能刚被删了），原文先帮你留着，选一个项目吧。';
     save();render();toast('原文留着了，等你选项目');return;
   }
@@ -578,12 +598,12 @@ async function replyLog(l){
 项目档案：
 ${profilesText(pids)}
 最近记录：
-${recent.map(x=>`- ${dkey(x.ts)}｜${logPids(x).map(id=>P(id).name).join('、')}｜${x.raw.slice(0,150)}${x.reply&&x.reply!=='记下了。'?'｜你当时回：'+x.reply.slice(0,60):''}${threadText(x)}`).join('\n')||'（无）'}
+${recent.map(x=>`- ${dkey(x.ts)}｜${logPids(x).map(id=>P(id).name).join('、')}｜${rawOf(x).slice(0,150)}${x.reply&&x.reply!=='记下了。'?'｜你当时回：'+x.reply.slice(0,60):''}${threadText(x)}`).join('\n')||'（无）'}
 未解决磕绊：
 ${openBlockersText(pids)}
 今天拆分结果：${JSON.stringify(l.items.map(i=>({project:P(i.pid)?.name,type:i.type,content:i.content,time_minutes:i.minutes,money_yuan:i.money,resolved:i.resolves?B(i.resolves)?.content:undefined,mentioned_again:i.mentions?B(i.mentions)?.content:undefined})))}
 情绪：${l.mood}
-今天原文：${l.raw}
+今天原文：${rawOf(l)}
 投入提示：${l.spendAlert||'（无）'}
 模式：${mode}`;
   try{l.reply=(await chat([{role:'system',content:sys},{role:'user',content:user}],0.8)).replace(/^["“]|["”]$/g,'');l.status='done';l.err='';}
@@ -684,7 +704,7 @@ ${PROFILE_FORMAT}`;
 旧档案：
 ${p.profile||'（空，这是第一次）'}
 今天的条目：${JSON.stringify(l.items.filter(i=>i.pid===pid).map(i=>({type:i.type,content:i.content,time_minutes:i.minutes,money_yuan:i.money})))}
-今天原文：${l.raw}
+今天原文：${rawOf(l)}
 未解决磕绊：
 ${openBlockersText([pid])}
 现有的待回访：${JSON.stringify(p.followUps.filter(f=>!f.done).map(f=>({content:f.content,due_date:f.due})))}
@@ -722,7 +742,7 @@ ${PROFILE_FORMAT}`;
 旧档案（仅供参考，格式不要沿用）：
 ${p.profile||'（无）'}
 近期记录（按时间顺序）：
-${ls.map(l=>`- ${dkey(l.ts)}｜${l.raw.slice(0,200)}｜整理出的条目：${l.items.filter(i=>i.pid===pid).map(i=>TYPES[i.type]+'：'+i.content).join('；')}${threadText(l,8,100)}`).join('\n')}
+${ls.map(l=>`- ${dkey(l.ts)}｜${rawOf(l).slice(0,200)}｜整理出的条目：${l.items.filter(i=>i.pid===pid).map(i=>TYPES[i.type]+'：'+i.content).join('；')}${threadText(l,8,100)}`).join('\n')}
 未解决磕绊：
 ${openBlockersText([pid])}
 已解决的磕绊：
@@ -838,7 +858,7 @@ async function generateReview(kind,period,manual){
   if(old&&old.status==='pending'){if(manual)toast('正在写，稍等一下');return false;}
   const rv={id:old?.id||uid('r'),kind,period,ts:Date.now(),text:'',status:'pending',logCount:ls.length,seen:false};
   S.reviews=S.reviews.filter(r=>r!==old);S.reviews.unshift(rv);save();render();
-  const recLines=ls.map(l=>`- ${kind==='day'?hm(l.ts):dkey(l.ts)}｜${logPids(l).map(id=>P(id).name).join('、')}｜情绪 ${l.mood}｜${l.raw.slice(0,kind==='month'?100:160)}${kind==='month'?'':threadText(l,4,60)}`).join('\n');
+  const recLines=ls.map(l=>`- ${kind==='day'?hm(l.ts):dkey(l.ts)}｜${logPids(l).map(id=>P(id).name).join('、')}｜情绪 ${l.mood}｜${rawOf(l).slice(0,kind==='month'?100:160)}${kind==='month'?'':threadText(l,4,60)}`).join('\n');
   let task,user;
   if(kind==='day'){
     task=`任务：现在是晚上，给用户写今天的复盘，像睡前朋友陪 TA 回看一下今天。
@@ -948,7 +968,7 @@ async function followUp(l,text){
   const pids=logPids(l);
   l.thread=l.thread||[];l.thread.push({role:'user',text,ts:Date.now()});l.replying=true;save();render();
   const msgs=[{role:'system',content:persona()+'\n\n你在和用户接着聊 TA 的一条记录。像微信聊天一样接话，1～3 句，不超过 100 字。\n项目档案：\n'+profilesText(pids)+'\n未解决磕绊：\n'+openBlockersText(pids)+feedbackText()},
-    {role:'user',content:l.raw},{role:'assistant',content:l.reply||'记下了。'}];
+    {role:'user',content:rawOf(l)},{role:'assistant',content:l.reply||'记下了。'}];
   l.thread.filter(m=>m.role!=='memo'&&!m.err).forEach(m=>msgs.push({role:m.role==='user'?'user':'assistant',content:m.text}));
   let ok=false;
   try{l.thread.push({role:'ai',text:await chat(msgs,0.8),ts:Date.now()});ok=true;}
@@ -998,7 +1018,7 @@ ${openBlockersText(pids)}
 已完成或不用再问：${fuClosedText(p)}
 已经记得的关于 TA：${JSON.stringify((S.memory||[]).map(m=>m.text))}
 
-【原记录 ${dkey(l.ts)}】${l.raw}
+【原记录 ${dkey(l.ts)}】${rawOf(l)}
 【你当时的回应】${l.reply||'（无）'}
 【之前已经聊过的】${(l.thread||[]).slice(0,part.from).filter(m=>m.role!=='memo'&&!m.err).map(m=>(m.role==='user'?'TA：':'你：')+m.text).join(' / ')||'（无）'}
 【这次新聊的】
@@ -1069,6 +1089,7 @@ function toMarkdown(){
     ls.forEach(l=>{const k=dkey(l.ts);if(k!==last){out.push(`#### ${k} 周${WEEK[new Date(l.ts).getDay()]}`,``);last=k;}
       const others=logPids(l).filter(id=>id!==p.id).map(id=>P(id).name);
       out.push(`**${hm(l.ts)}**${l.mood&&l.mood!=='neutral'?` · 状态：${MOODS[l.mood]}`:''}${others.length?` · 同时涉及：${others.join('、')}`:''}`,``,l.raw,``);
+      if((l.photos||[]).length)out.push(`（附 ${l.photos.length} 张照片${l.photoText?'：'+l.photoText.replace(/\n/g,' '):''}）`,``);
       l.items.filter(i=>i.pid===p.id).forEach(i=>out.push(`- ${TYPES[i.type]}：${i.content}${i.minutes?` · ${i.minutes} 分钟`:''}${i.money?` · ${i.money} 元`:''}`));
       out.push(``);
       if(l.reply)out.push(`> ${nm}：${l.reply.replace(/\n/g,'\n> ')}`,``);
@@ -1093,6 +1114,50 @@ function voiceEngine(){const e=S.settings.voice||'auto';
   if(e==='qwen')return asrKey()?'qwen':'need-key';
   if(e==='browser')return SR?'browser':'no-browser';
   return asrKey()?'qwen':(SR?'browser':'need-key');}
+/* ============ 照片 ============ */
+// 照片存在浏览器的 IndexedDB 里（容量比 localStorage 大得多），记录里只存编号
+const PDB={db:null,
+  open(){return this.db||(this.db=new Promise((res,rej)=>{const r=indexedDB.open('xmsj_photos',1);r.onupgradeneeded=()=>r.result.createObjectStore('p');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);}));},
+  async tx(mode,fn){const db=await this.open();return new Promise((res,rej)=>{const t=db.transaction('p',mode);const st=t.objectStore('p');let out;const q=fn(st);if(q)q.onsuccess=()=>out=q.result;t.oncomplete=()=>res(out);t.onerror=()=>rej(t.error);});},
+  put(id,v){return this.tx('readwrite',s=>s.put(v,id));},
+  get(id){return this.tx('readonly',s=>s.get(id));},
+  del(id){return this.tx('readwrite',s=>s.delete(id));}};
+const PHC={};// 内存缓存 id → dataURL
+async function phGet(id){if(PHC[id])return PHC[id];try{const v=await PDB.get(id);if(v)PHC[id]=v;return v||'';}catch(e){return '';}}
+async function phPut(id,data){PHC[id]=data;try{await PDB.put(id,data);}catch(e){toast('照片没存进本机，可能空间不够');}}
+function phDel(id){delete PHC[id];PDB.del(id).catch(()=>{});}
+function hydratePhotos(){document.querySelectorAll('img[data-ph]:not([src])').forEach(async im=>{const d=await phGet(im.dataset.ph);if(d)im.src=d;else im.closest('.ph')?.classList.add('gone');});}
+const MAX_PH=4;
+// 压缩：长边 1280，JPEG 0.78，一张大约 150～300KB
+function shrink(file){return new Promise(res=>{const fr=new FileReader();fr.onload=()=>{const src=fr.result;const im=new Image();
+  im.onload=()=>{try{const k=Math.min(1,1280/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);
+    c.getContext('2d').drawImage(im,0,0,c.width,c.height);const out=c.toDataURL('image/jpeg',0.78);res(out&&out.length>30?out:src);}catch(e){res(src);}};
+  im.onerror=()=>res(src);im.src=src;};fr.onerror=()=>res('');fr.readAsDataURL(file);});}
+const VL_MODELS=['qwen3-vl-flash','qwen-vl-plus'];
+async function describePhotos(l){
+  const key=asrKey();if(!key)return;
+  const imgs=(await Promise.all(l.photos.map(p=>phGet(p.id)))).filter(Boolean);if(!imgs.length)return;
+  const content=[{type:'text',text:`用户在自己的项目日志里附了 ${imgs.length} 张照片${l.raw?`，同时写了：「${l.raw.slice(0,300)}」`:''}。
+逐张客观描述照片里有什么，每张一两句。跟做事、学习、花钱有关的细节要照抄：上面的文字、数字、金额、日期、进度、作品的样子。
+不猜测、不评价、不给建议。格式：图1：……（换行）图2：……`},...imgs.map(u=>({type:'image_url',image_url:{url:u}}))];
+  let last='';
+  for(const model of (S.settings.vlModel?[S.settings.vlModel]:VL_MODELS)){
+    const r=await fetch(ASR_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model,messages:[{role:'user',content}],temperature:0.2})});
+    if(r.ok){const j=await r.json();const t=(j.choices?.[0]?.message?.content||'').trim();if(t){l.photoText=t.slice(0,800);S.settings.vlModel=model;return;}}
+    let m='';try{m=(await r.json()).error?.message||'';}catch(e){}last=r.status+(m?'：'+m:'');
+    if(r.status===401)break;
+  }
+  throw new Error('看照片没成功（'+last+'）');
+}
+function phRow(){const el=$('#phrow');if(!el||!draft)return;const ps=draft.photos||[];
+  el.innerHTML=ps.map((p,i)=>`<span class="ph"><img src="${p.data}" alt="照片${i+1}"><button type="button" data-phrm="${i}" aria-label="去掉这张">×</button></span>`).join('')+
+  (ps.length<MAX_PH?`<button type="button" class="phadd" data-act="addphoto"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9Zm3 5a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/></svg><span>${ps.length?'再加':'加照片'}</span></button>`:'')+
+  (ps.length&&!asrKey()?`<span class="vhint err" style="flex-basis:100%">还没有百炼 Key：照片会存下，但${AN()}看不到内容。到「设置 → 语音和照片」填一下。</span>`:'');}
+async function addPhotos(files){draft.photos=draft.photos||[];const room=MAX_PH-draft.photos.length;
+  const fs=[...files].filter(f=>/^image\//.test(f.type)||/\.(jpe?g|png|heic|heif|webp|gif)$/i.test(f.name)).slice(0,room);
+  if(files.length>room)toast('一条最多 '+MAX_PH+' 张');
+  for(const f of fs){const d=await shrink(f);if(d)draft.photos.push({id:uid('ph'),data:d,fresh:true});}
+  phRow();}
 let REC=null;
 function vbar(html,cls=''){const el=$('#vbar');if(el){el.className='voice '+cls;el.innerHTML=html;}}
 function voiceIdle(msg,err){
@@ -1202,7 +1267,7 @@ function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show')
 const AN=()=>esc(S.settings.aiName||'小记');
 
 function render(){
-  const a=$('#app');
+  const a=$('#app');setTimeout(()=>{fillCop();hydratePhotos();},0);
   if(V.tab==='project'&&P(V.pid))a.innerHTML=viewProject();
   else if(V.tab==='projects')a.innerHTML=viewProjects();
   else if(V.tab==='lists')a.innerHTML=viewLists();
@@ -1275,7 +1340,7 @@ function logCard(l){
   if(l.status!=='splitting'&&l.status!=='confirm')l.items.forEach(i=>chips+=itemChip(i,multi));
   if(l.mood==='low'||l.mood==='very_low')chips+=`<span class="chip"><b>状态</b>${MOODS[l.mood]}</span>`;
   let note='';
-  if(l.status==='splitting')note=`<div class="note wait"><div class="txt">${AN()}正在整理……</div></div>`;
+  if(l.status==='splitting')note=`<div class="note wait"><div class="txt">${AN()}${l.looking?'在看照片':'正在整理'}……</div></div>`;
   else if(l.status==='confirm')note=`<div class="note"><div class="who">${AN()}想确认一下</div><div class="txt">${esc(l.question||'有几段不确定归到哪个项目。')}</div><div class="eacts" style="margin-top:6px"><button style="color:var(--pen)" data-confirm="${l.id}">去确认</button></div></div>`;
   else if(l.status==='replying')note=`<div class="note wait"><div class="txt">${AN()}在看……</div></div>`;
   else if(l.status==='error')note=`<div class="note err"><div class="who">没收到回应</div><div class="txt">${esc(l.err)}</div></div>`;
@@ -1289,7 +1354,8 @@ function logCard(l){
   const busy=['splitting','replying'].includes(l.status);
   return `<article class="entry" style="--c:${first.color};--bar:${bar}">
   <div class="ehead"><span class="pns">${names}</span><span class="tm">${hm(l.ts)}</span></div>
-  <div class="etext">${esc(l.raw)}</div>
+  ${l.raw?`<div class="etext">${esc(l.raw)}</div>`:''}
+  ${(l.photos||[]).length?`<div class="phs">${l.photos.map((p,i)=>`<button class="ph" data-phview="${p.id}" aria-label="看大图"><img data-ph="${p.id}" alt="照片${i+1}"></button>`).join('')}</div>${l.photoErr?`<div class="vhint err" style="margin-top:4px">${esc(l.photoErr)}</div>`:''}`:''}
   ${chips?`<div class="chips">${chips}</div>`:''}
   ${note}${th?`<div class="thread">${th}</div>`:''}${rb}
   ${busy?'':`<div class="eacts">${l.status==='done'?`<button data-replyopen="${l.id}">接着聊</button><button data-rereply="${l.id}">换个回应</button>`:''}${l.status==='error'?`<button style="color:var(--pen)" data-retry="${l.id}">重试</button>`:''}<button data-edit="${l.id}">编辑</button><button data-del="${l.id}">删除</button></div>`}
@@ -1385,7 +1451,10 @@ function viewSettings(){
   <label class="f">模型名</label><input class="inp" id="s_model" value="${esc(st.model)}" placeholder="deepseek-flash">
   <label class="f">API Key</label><input class="inp" id="s_key" type="password" value="${esc(st.key)}" placeholder="sk-…" autocomplete="off">
   <button class="primary" data-act="savecfg">保存</button><button class="ghost" data-act="testcfg">测试连接</button></div>
-  <div class="card"><h3 style="font-size:15px;margin-bottom:4px">语音输入</h3><p>在「写一笔」里点麦克风说话，转成文字后再提交。录音只用来转文字，不会保存。</p>
+  <div class="card"><h3 style="font-size:15px;margin-bottom:4px">打开时</h3>
+  <label class="toggle"><input type="checkbox" ${st.openCompose!==false?'checked':''} data-check="openCompose"> 一打开就进入「写一笔」</label>
+  <p class="hint">${AN()}的关心和新写好的复盘会在「写一笔」顶部提一句；点「取消」就回到首页。离开超过 10 分钟再回来，也会直接进入。没写完关掉的话，下次打开文字还在。</p></div>
+  <div class="card"><h3 style="font-size:15px;margin-bottom:4px">语音和照片</h3><p>在「写一笔」里点麦克风说话，转成文字后再提交。录音只用来转文字，不会保存。<br>照片也用下面这个百炼 Key：${AN()}会先看一眼照片（小票上的金额、作品、截图里的字），再一起整理。照片存在这台手机的浏览器里，导出备份时会一起带上。</p>
   <label class="f">识别方式</label><div class="seg">${[['auto','自动'],['qwen','通义千问'],['browser','浏览器自带']].map(([k,v])=>`<button class="${(st.voice||'auto')===k?'on':''}" data-voice="${k}">${v}</button>`).join('')}</div>
   <p class="hint">通义千问最稳，需要阿里云百炼的 API Key；浏览器自带的免费，但国内常常连不上。自动：有百炼 Key 就用通义千问。</p>
   <label class="f">阿里云百炼 API Key</label><input class="inp" id="s_asrkey" type="password" value="${esc(st.asrKey||'')}" placeholder="${st.preset==='qwen'?'上面服务商选了通义千问，可以不填':'sk-…'}" autocomplete="off" data-setting="asrKey">
@@ -1416,16 +1485,35 @@ function composeSheet(pid,editId,opts={}){
   if(!act.length){projSheet();return;}
   const e=editId?L(editId):null;
   const ctx=pid||(V.tab==='project'?V.pid:(V.filter!=='all'?V.filter:null));
-  draft={pid:e?(e.forcePid||'auto'):(ctx||(act.length>1?'auto':act[0].id)),editId,voiceEmotion:''};
+  draft={pid:e?(e.forcePid||'auto'):(ctx||(act.length>1?'auto':act[0].id)),editId,voiceEmotion:'',photos:[]};
   openSheet(`<h3>${e?'编辑记录':'写一笔'}<button data-act="close">取消</button></h3>
+  ${e?'':'<div id="cop"></div>'}
   <label class="f">哪个项目</label><div class="seg" id="cpick">${act.length>1?`<button class="auto ${draft.pid==='auto'?'on':''}" data-pick="auto">✦ 让${AN()}分</button>`:''}${act.map(p=>`<button class="${draft.pid===p.id?'on':''}" data-pick="${p.id}"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</button>`).join('')}</div>
-  <label class="f">今天怎么样</label><div class="voice" id="vbar"></div><textarea class="inp" id="ctext" placeholder="随便写：做了什么、学到什么、花了多少时间和钱、卡在哪里、冒出什么想法……几个项目混着写也行。">${esc(e?.raw||'')}</textarea>
+  <label class="f">今天怎么样</label><div class="voice" id="vbar"></div><div class="phrow" id="phrow"></div><input type="file" id="phfile" accept="image/*" multiple hidden><textarea class="inp" id="ctext" placeholder="随便写：做了什么、学到什么、花了多少时间和钱、卡在哪里、冒出什么想法……几个项目混着写也行。">${esc(e?.raw||'')}</textarea>
   <div class="hint">说出具体的时间和金额会自动记下，比如"两个半小时""花了 380"。</div>
   <label class="toggle"><input type="checkbox" id="cquiet" ${e?.mode==='log_only'?'checked':''}> 只记录，不用回</label>
   <button class="primary" data-act="submit">${e?'保存并重新整理':'写好了'}</button>`);
-  voiceIdle();
+  voiceIdle();phRow();
+  if(e&&(e.photos||[]).length)Promise.all(e.photos.map(async p=>({id:p.id,data:await phGet(p.id)}))).then(ps=>{if(draft.editId!==e.id)return;draft.photos=ps.filter(p=>p.data);phRow();});
+  if(opts.photo)setTimeout(()=>$('#phfile')?.click(),0);
+  if(!e){const dr=getDraft();if(dr&&!$('#ctext').value){$('#ctext').value=dr;}fillCop();}
   if(!opts.voice)setTimeout(()=>$('#ctext')?.focus(),250);
 }
+// 写一笔顶部：小记的开场关心 / 新复盘，一行带过
+function fillCop(){const el=$('#cop');if(!el)return;let h='';const op=S.opener;
+  if(op&&op.day===dkey(Date.now())&&!op.dismissed){
+    if(op.status==='pending')h+=`<div class="cop wait"><b>${esc(AN())}</b>翻了翻你的本子……</div>`;
+    else if(op.status==='done')h+=`<div class="cop"><b>${esc(AN())}</b>${esc(op.text)}<button data-act="dismissop">知道了</button></div>`;}
+  const rv=S.reviews.filter(r=>r.status==='done'&&!r.seen).sort((a,b)=>b.ts-a.ts)[0];
+  if(rv)h+=`<div class="cop rv"><b>${esc(AN())}</b>写好了${{day:'今天的复盘',week:'这周的复盘',month:'这个月的复盘'}[rv.kind]}<button data-act="close">去看看</button></div>`;
+  el.innerHTML=h;}
+const DKEY='xmsj_draft';
+function getDraft(){try{return localStorage.getItem(DKEY)||'';}catch(e){return '';}}
+function setDraft(t){try{t?localStorage.setItem(DKEY,t):localStorage.removeItem(DKEY);}catch(e){}}
+function autoCompose(){
+  if(S.settings.openCompose===false||!activeProjects().length||!S.settings.key)return;
+  if($('#mask').classList.contains('show'))return;
+  V.tab='home';V.filter='all';render();composeSheet();}
 let cdraft=null;
 function openConfirm(id){const l=L(id);if(!l)return;cdraft={id,items:l.items.map(i=>({...i}))};renderConfirm();$('#mask').classList.add('show');}
 function renderConfirm(){
@@ -1477,7 +1565,7 @@ function projSheet(editId,name){
   <button class="primary" data-act="saveproj">${p?'保存':'创建项目'}</button>
   ${p?`<button class="ghost danger" data-delproj="${p.id}">删除项目及其全部记录</button>`:''}`);
 }
-function removeLog(l){undoLog(l);S.logs=S.logs.filter(x=>x.id!==l.id);S.feedback=S.feedback.filter(f=>f.ref!==l.id);}
+function removeLog(l){undoLog(l);(l.photos||[]).forEach(p=>phDel(p.id));S.logs=S.logs.filter(x=>x.id!==l.id);S.feedback=S.feedback.filter(f=>f.ref!==l.id);}
 
 /* ============ 事件 ============ */
 document.addEventListener('click',ev=>{
@@ -1524,6 +1612,8 @@ document.addEventListener('click',ev=>{
     S.projects.forEach(p=>{const f=p.followUps.find(x=>x.id===id);if(f){hit=true;f.done=true;f.doneTs=Date.now();if(d.fudrop)f.dropped=true;}});
     if(S.opener&&S.opener.ref===id)S.opener.dismissed=true;save();render();
     toast(!hit?'这件事已经被更新过了，到「清单」里看看':d.fudone?'好，记下了':'不再问这件事');return;}
+  if(d.phrm!==undefined){draft.photos.splice(+d.phrm,1);phRow();return;}
+  if(d.phview){phGet(d.phview).then(src=>{if(!src){toast('这张照片在本机找不到了');return;}openSheet(`<h3>照片<button data-act="close">关闭</button></h3><img class="phbig" src="${src}" alt="照片">`);});return;}
   if(d.ilink){linkSheet(d.ilink);return;}
   if(d.ilinkto){const [id,pid]=d.ilinkto.split('|');const it=findItem(id);if(it){it.linkPid=pid===it.pid?null:pid;save();closeSheet();render();toast(pid===it.pid?'放回原来的项目了':'关联到「'+P(pid).name+'」');}return;}
   if(d.idea2proj){const i=findItem(d.idea2proj);if(i){closeSheet();projSheet(null,i.content.slice(0,20));pdraft.fromIdea=i.id;$('#pdesc').value=i.content;}return;}
@@ -1539,6 +1629,7 @@ document.addEventListener('click',ev=>{
   if(act==='togglesolved'){V.showSolved=!V.showSolved;render();return;}
   if(act==='toggleideas'){V.ideaAll=!V.ideaAll;render();return;}
   if(act==='voice'){startVoice();return;}
+  if(act==='addphoto'){$('#phfile')?.click();return;}
   if(act==='voicestop'){stopVoice();return;}
   if(act==='voicecancel'){cancelVoice();return;}
   if(act==='quickvoice'){if(!activeProjects().length){projSheet();return;}composeSheet(null,null,{voice:true});startVoice();return;}
@@ -1547,17 +1638,22 @@ document.addEventListener('click',ev=>{
   if(act==='newproj'){projSheet();return;}
   if(act==='rvmore'){V.rvMore=!V.rvMore;render();return;}
   if(act==='rvsettings'){rvSheet();return;}
-  if(act==='dismissop'){S.opener.dismissed=true;save();render();return;}
+  if(act==='dismissop'){S.opener.dismissed=true;save();render();fillCop();return;}
   if(act==='confirmsave'){saveConfirm();return;}
   if(act==='confirmedit'){const l=L(cdraft.id);composeSheet(null,l.id);return;}
   if(act==='clearfb'){if(confirm('清空所有评价记录？')){S.feedback=[];save();render();}return;}
   if(act==='submit'){
     if(REC){toast('先点「说完了」');return;}
-    const raw=$('#ctext').value.trim();if(!raw){toast('先写点什么');return;}
+    const raw=$('#ctext').value.trim();const phs=draft.photos||[];if(!raw&&!phs.length){toast('先写点什么');return;}
+    phs.filter(p=>p.fresh).forEach(p=>phPut(p.id,p.data));
+    const photos=phs.map(p=>({id:p.id}));
     const mode=$('#cquiet').checked?'log_only':'normal';const forcePid=draft.pid==='auto'?null:draft.pid;
     let l=draft.editId?L(draft.editId):null;
-    if(l){const oldPids=[...new Set([...(l.rebuildPids||[]),...logPids(l)])];undoLog(l);Object.assign(l,{raw,mode,forcePid,items:[],reply:'',thread:[],exception:false,rebuildPids:oldPids});S.feedback=S.feedback.filter(f=>f.ref!==l.id);}
-    else{l={id:uid('e'),ts:Date.now(),raw,mode,forcePid,items:[],mood:'neutral',reply:'',status:'splitting',thread:[],voiceEmotion:draft.voiceEmotion||''};S.logs.push(l);}
+    if(l){const oldPids=[...new Set([...(l.rebuildPids||[]),...logPids(l)])];undoLog(l);
+      const keep=new Set(photos.map(p=>p.id));(l.photos||[]).forEach(p=>{if(!keep.has(p.id))phDel(p.id);});
+      const same=(l.photos||[]).map(p=>p.id).join()===photos.map(p=>p.id).join();
+      Object.assign(l,{raw,mode,forcePid,items:[],reply:'',thread:[],exception:false,rebuildPids:oldPids,photos,photoText:same?l.photoText:''});S.feedback=S.feedback.filter(f=>f.ref!==l.id);}
+    else{setDraft('');l={id:uid('e'),ts:Date.now(),raw,mode,forcePid,items:[],mood:'neutral',reply:'',status:'splitting',thread:[],voiceEmotion:draft.voiceEmotion||'',photos,photoText:''};S.logs.push(l);}
     save();closeSheet();if(V.tab!=='project')V.tab='home';scrollTo(0,0);runLog(l);return;
   }
   if(act==='saveproj'){
@@ -1574,7 +1670,11 @@ document.addEventListener('click',ev=>{
     toast('测试中…');chat([{role:'user',content:'用一句话（20字内）跟我打个招呼'}]).then(r=>alert('连接成功：\n'+r)).catch(e=>alert(e.message));return;
   }
   if(act==='exportmd'){download(toMarkdown(),'项目手记-'+dkey(Date.now())+'.md','text/markdown');return;}
-  if(act==='export'){S.settings.lastExport=Date.now();save();render();download(JSON.stringify({...S,settings:{...S.settings,key:'',asrKey:''}},null,1),'项目手记备份-'+dkey(Date.now())+'.json','application/json');return;}
+  if(act==='export'){S.settings.lastExport=Date.now();save();render();
+    const ids=S.logs.flatMap(l=>(l.photos||[]).map(p=>p.id));
+    Promise.all(ids.map(async id=>[id,await phGet(id)])).then(arr=>{const photoData=Object.fromEntries(arr.filter(x=>x[1]));
+      download(JSON.stringify({...S,settings:{...S.settings,key:'',asrKey:''},photoData}),'项目手记备份-'+dkey(Date.now())+'.json','application/json');
+      if(ids.length)toast('备份里带上了 '+Object.keys(photoData).length+' 张照片');});return;}
   if(act==='import'){$('#impfile').click();return;}
   if(act==='wipe'){if(confirm('清空全部项目和记录？此操作不能撤销。')&&confirm('再确认一次：真的清空？')){const st=S.settings;S=blank();S.settings=st;save();render();}return;}
 });
@@ -1585,10 +1685,11 @@ document.addEventListener('submit',ev=>{const f=ev.target;
   if(f.dataset.memadd){ev.preventDefault();const t=f.querySelector('input').value.trim();if(t){S.memory.push({id:uid('m'),text:t.slice(0,40),ts:Date.now(),manual:true});save();render();toast('记住了');}return;}
   if(f.dataset.reasonform){ev.preventDefault();const r=rating(f.dataset.reasonform);if(r){r.reason=f.querySelector('input').value.trim()||(r.v==='bad'?'没说':'');save();}V.reasonFor=null;render();toast('记下了，下次会注意');}
 });
-document.addEventListener('input',ev=>{const k=ev.target.dataset?.citem;if(k!==undefined&&cdraft)cdraft.items[+k].content=ev.target.value;});
+document.addEventListener('input',ev=>{if(ev.target.id==='ctext'&&draft&&!draft.editId)setDraft(ev.target.value);const k=ev.target.dataset?.citem;if(k!==undefined&&cdraft)cdraft.items[+k].content=ev.target.value;});
 document.addEventListener('change',ev=>{
+  if(ev.target.id==='phfile'){const fl=ev.target.files;if(fl&&fl.length)addPhotos(fl);ev.target.value='';return;}
   if(ev.target.id==='impfile'){const f=ev.target.files[0];if(!f)return;f.text().then(t=>{const d=JSON.parse(t);if(!d.projects)throw 0;
-    const key=S.settings.key;S=d.v===3?fixup(d):migrate(d);if(!S.settings.key)S.settings.key=key;save();render();toast('已恢复 '+S.logs.length+' 条记录');}).catch(()=>alert('这个文件不是项目手记的备份。'));}
+    const key=S.settings.key;const pd=d.photoData||{};delete d.photoData;Object.entries(pd).forEach(([id,v])=>phPut(id,v));S=d.v===3?fixup(d):migrate(d);if(!S.settings.key)S.settings.key=key;save();render();toast('已恢复 '+S.logs.length+' 条记录');}).catch(()=>alert('这个文件不是项目手记的备份。'));}
   const k=ev.target.dataset?.setting;if(k){S.settings[k]=ev.target.value.trim()||(k==='aiName'?'小记':'');save();render();}
   const c=ev.target.dataset?.check;if(c){S.settings[c]=ev.target.checked;save();}
   const rt=ev.target.dataset?.rvtime;if(rt&&/^\d\d:\d\d$/.test(ev.target.value)){S.settings.rv=S.settings.rv||{};S.settings.rv[rt]={...rvCfg(rt),t:ev.target.value};save();render();toast('已改为 '+ev.target.value);}
@@ -1600,11 +1701,14 @@ S.logs.forEach(l=>{if(l.status==='splitting'||l.status==='replying'){l.stage=l.s
 S.reviews.forEach(r=>{if(r.status==='pending'){r.status='error';r.text='上次没生成完。';}});
 if(S.opener&&S.opener.status==='pending')S.opener=null;
 save();render();
+autoCompose();
 makeOpener(false);
 S.logs.filter(l=>(l.thread||[]).length>(l.digested||0)&&(l.thread||[]).slice(l.digested||0).some(m=>m.role==='user')&&!l.replying).slice(-5).forEach(l=>digestThread(l));
 checkReviews();
 setInterval(checkReviews,60*1000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkReviews();makeOpener(false);}});
+let hiddenAt=0;
+document.addEventListener('visibilitychange',()=>{if(document.hidden){hiddenAt=Date.now();return;}
+  if(hiddenAt&&Date.now()-hiddenAt>10*60*1000)autoCompose();hiddenAt=0;checkReviews();makeOpener(false);});
 
 </script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
