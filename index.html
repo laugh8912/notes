@@ -272,6 +272,7 @@ textarea.inp{min-height:150px;resize:vertical;line-height:1.7;background:#fff re
 .memitem{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--rule);border-radius:8px;padding:7px 10px;font-size:14px}
 .memitem span{flex:1}
 .memitem button{font-size:12px;color:var(--ink-2)}
+.item .from .lk{color:var(--ink-3);margin-left:2px}
 </style>
 </head>
 <body>
@@ -369,7 +370,7 @@ function projStats(pid){
 }
 function sumRange(pid,from,to){let min=0,money=0;S.logs.forEach(l=>{if(l.ts<from||l.ts>=to||l.status==='confirm')return;
   l.items.forEach(i=>{if(i.pid===pid){min+=+i.minutes||0;money+=+i.money||0;}});});return {min,money};}
-function allIdeas(){const r=[];S.logs.forEach(l=>{if(l.status==='confirm')return;l.items.forEach(i=>{if(i.type==='idea'&&i.pid&&P(i.pid))r.push({id:i.id,text:i.content,pid:i.pid,ts:l.ts,state:i.ideaState||'new',toPid:i.toPid||null});});});return r.sort((a,b)=>b.ts-a.ts);}
+function allIdeas(){const r=[];S.logs.forEach(l=>{if(l.status==='confirm')return;l.items.forEach(i=>{if(i.type==='idea'&&i.pid&&P(i.pid)){const lk=i.linkPid&&P(i.linkPid)?i.linkPid:null;r.push({id:i.id,text:i.content,src:i.pid,pid:lk||i.pid,linked:!!lk,ts:l.ts,state:i.ideaState||'new',toPid:i.toPid||null});}});});return r.sort((a,b)=>b.ts-a.ts);}
 function allGains(){const r=[];S.logs.forEach(l=>{if(l.status==='confirm')return;l.items.forEach(i=>{if(i.type==='gain'&&i.pid&&P(i.pid))r.push({id:i.id,text:i.content,pid:i.pid,ts:l.ts});});});return r.sort((a,b)=>b.ts-a.ts);}
 function findItem(id){for(const l of S.logs)for(const i of l.items)if(i.id===id)return i;return null;}
 function attentionCount(){const today=dkey(Date.now());
@@ -431,7 +432,9 @@ function personaLite(){
   const st=S.settings;const nm=st.aiName||'小记';
   return `你是"${nm}"，用户的项目伙伴，帮 TA 整理同时在推进的几个项目的记录。${st.nick?`你称呼用户为"${st.nick}"。`:''}`;
 }
-function profilesText(pids){return pids.map(id=>{const p=P(id);return p?`「${p.name}」（${p.desc||p.cat}）\n${p.profile||'（档案还是空的）'}`:'';}).filter(Boolean).join('\n\n')||'（无）';}
+function profilesText(pids){return pids.map(id=>{const p=P(id);if(!p)return '';
+  const ideas=allIdeas().filter(i=>i.pid===id&&(i.state==='new'||i.state==='star')).slice(0,5);
+  return `「${p.name}」（${p.desc||p.cat}）\n${p.profile||'（档案还是空的）'}${ideas.length?`\n这个项目下还没落地的灵感：${ideas.map(i=>(i.state==='star'?'★':'')+i.text).join('；')}`:''}`;}).filter(Boolean).join('\n\n')||'（无）';}
 function openBlockersText(pids){
   const bs=S.blockers.filter(b=>!b.solved&&(!pids||pids.includes(b.pid))&&P(b.pid));
   return bs.map(b=>`- [${b.id}] 「${P(b.pid).name}」${b.content}（已持续 ${daysAgo(b.first)} 天，最近一次提到是 ${daysAgo(b.last)} 天前）`).join('\n')||'（无）';
@@ -1327,9 +1330,9 @@ function blockItem(b){const p=P(b.pid)||{name:'',color:'#999'};
 const IDEA_ST={new:'新的',star:'留着',project:'已变成项目',drop:'放下了'};
 function ideaItem(i){const p=P(i.pid)||{name:'',color:'#999'};const to=i.toPid&&P(i.toPid);
   let acts='';
-  if(i.state==='new'||i.state==='star')acts=`<button class="star ${i.state==='star'?'on':''}" data-istar="${i.id}" aria-label="留着">${i.state==='star'?'★':'☆'}</button><button class="mini" data-idea2proj="${i.id}">变成项目</button><button class="mini" data-idrop="${i.id}">放下</button>`;
+  if(i.state==='new'||i.state==='star')acts=`<button class="star ${i.state==='star'?'on':''}" data-istar="${i.id}" aria-label="留着">${i.state==='star'?'★':'☆'}</button><button class="mini" data-ilink="${i.id}">${i.linked?'换项目':'关联项目'}</button><button class="mini" data-idea2proj="${i.id}">变成项目</button><button class="mini" data-idrop="${i.id}">放下</button>`;
   else acts=`<button class="mini" data-ireset="${i.id}">${i.state==='drop'?'捡回来':'撤销'}</button>`;
-  return `<div class="item idea ${i.state}"><span class="ico" style="color:var(--gold)">✦</span><div style="flex:1;min-width:0"><div class="it">${esc(i.text)}</div><div class="from"><span class="dot" style="background:${p.color}"></span>${esc(p.name)} · ${dkey(i.ts)}${i.state==='project'?` · 变成了「${esc(to?to.name:'已删除的项目')}」`:i.state==='drop'?' · 放下了':''}</div><div class="iacts">${acts}</div></div></div>`;}
+  return `<div class="item idea ${i.state}"><span class="ico" style="color:var(--gold)">✦</span><div style="flex:1;min-width:0"><div class="it">${esc(i.text)}</div><div class="from"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}${i.linked&&P(i.src)?`<span class="lk">（记在「${esc(P(i.src).name)}」时想到的）</span>`:''} · ${dkey(i.ts)}${i.state==='project'?` · 变成了「${esc(to?to.name:'已删除的项目')}」`:i.state==='drop'?' · 放下了':''}</div><div class="iacts">${acts}</div></div></div>`;}
 function gainItem(g){const p=P(g.pid)||{name:'',color:'#999'};
   return `<div class="item"><span class="ico" style="color:var(--pen)">◆</span><div style="flex:1"><div class="it">${esc(g.text)}</div><div class="from"><span class="dot" style="background:${p.color}"></span>${esc(p.name)} · ${dkey(g.ts)}</div></div></div>`;}
 function fuItem(f){const p=S.projects.find(x=>x.followUps.includes(f))||{name:'',color:'#999'};const due=f.due<=dkey(Date.now());
@@ -1452,6 +1455,14 @@ function rvSheet(){
   ${[['day','每日复盘','每天'],['week','每周复盘','每周日'],['month','每月复盘','每月最后一天']].map(([k,n,w])=>{const c=rvCfg(k);return `<div class="rvrow"><div><b>${n}</b><small>${w}</small></div><input type="time" class="inp tm" value="${c.t}" data-rvtime="${k}" ${c.on?'':'disabled'}><button class="sw ${c.on?'on':''}" data-rvon="${k}" aria-label="开关"><i></i></button></div>`;}).join('')}
   <p class="hint">每篇复盘大约多调用一次 AI。</p>`);
 }
+function linkSheet(id){
+  const it=findItem(id);if(!it)return;const cur=it.linkPid&&P(it.linkPid)?it.linkPid:it.pid;
+  openSheet(`<h3>关联到哪个项目<button data-act="close">取消</button></h3>
+  <div class="note" style="margin:0 0 14px"><div class="txt" style="font-size:16px">✦ ${esc(it.content)}</div></div>
+  <p class="hint" style="margin:-4px 0 10px">关联后，这条灵感会出现在那个项目的页面和清单里，${AN()}聊那个项目时也会想起它。</p>
+  <div class="seg">${activeProjects().map(p=>`<button class="${p.id===cur?'on':''}" data-ilinkto="${id}|${p.id}"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}${p.id===it.pid?'<small style="opacity:.6;margin-left:4px">原来的</small>':''}</button>`).join('')}</div>
+  <button class="ghost" data-idea2proj="${id}">都不是，用它新建一个项目</button>`);
+}
 let pdraft={};
 function newProject({name,desc='',cat='其他',color}){const p={id:uid('p'),name,desc,cat,color:color||COLORS[S.projects.length%COLORS.length],created:Date.now(),archived:false,profile:'',profileTs:0,followUps:[],lastAsked:0,spendAlerted:''};S.projects.push(p);return p;}
 function projSheet(editId,name){
@@ -1513,7 +1524,9 @@ document.addEventListener('click',ev=>{
     S.projects.forEach(p=>{const f=p.followUps.find(x=>x.id===id);if(f){hit=true;f.done=true;f.doneTs=Date.now();if(d.fudrop)f.dropped=true;}});
     if(S.opener&&S.opener.ref===id)S.opener.dismissed=true;save();render();
     toast(!hit?'这件事已经被更新过了，到「清单」里看看':d.fudone?'好，记下了':'不再问这件事');return;}
-  if(d.idea2proj){const i=findItem(d.idea2proj);if(i){projSheet(null,i.content.slice(0,20));pdraft.fromIdea=i.id;$('#pdesc').value=i.content;}return;}
+  if(d.ilink){linkSheet(d.ilink);return;}
+  if(d.ilinkto){const [id,pid]=d.ilinkto.split('|');const it=findItem(id);if(it){it.linkPid=pid===it.pid?null:pid;save();closeSheet();render();toast(pid===it.pid?'放回原来的项目了':'关联到「'+P(pid).name+'」');}return;}
+  if(d.idea2proj){const i=findItem(d.idea2proj);if(i){closeSheet();projSheet(null,i.content.slice(0,20));pdraft.fromIdea=i.id;$('#pdesc').value=i.content;}return;}
   if(d.editproj){projSheet(d.editproj);return;}
   if(d.arch){const p=P(d.arch);p.archived=!p.archived;save();render();toast(p.archived?'已归档':'已恢复');return;}
   if(d.delproj){if(confirm('删除项目会同时删除它的全部记录，确定？')){const id=d.delproj;S.projects=S.projects.filter(p=>p.id!==id);
