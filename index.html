@@ -297,6 +297,81 @@ textarea.inp{min-height:150px;resize:vertical;line-height:1.7;background:#fff re
 .cnew button{font-size:13px;padding:6px 10px;border-radius:8px;color:var(--pen);font-weight:600}
 .cnew button[type=button]{color:var(--ink-3);font-weight:400}
 .primary.danger{background:var(--warn)}
+/* ===== v3.14：手记目录 / 复盘独立 ===== */
+nav .in{grid-template-columns:repeat(5,1fr)}
+.rk{font-family:var(--sans);font-size:11px;font-weight:600;color:#fff;background:var(--pen);border-radius:4px;padding:0 5px;line-height:17px;flex:none}
+.rk.k-week{background:var(--ink)}.rk.k-month{background:var(--gold)}
+.yr{display:flex;align-items:baseline;gap:10px;margin:22px 2px 8px}
+.yr b{font-family:var(--mono);font-size:20px;font-weight:600;letter-spacing:1px}
+.yr small{font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.5px}
+.yr::after{content:"";flex:1;height:1px;background:var(--rule);align-self:center}
+.mon{background:var(--sheet);border:1px solid var(--rule);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.mh{width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;text-align:left}
+.mh .mn{font-family:var(--hand);font-weight:700;font-size:19px;min-width:44px}
+.mh .mc{font-family:var(--mono);font-size:11px;color:var(--ink-3);flex:1}
+.mh .car{color:var(--ink-3);font-size:12px;transition:transform .15s}
+.mon.open .mh .car{transform:rotate(180deg)}
+.drow{display:grid;grid-template-columns:42px 1fr auto;gap:12px;align-items:center;padding:10px 14px;border-top:1px solid var(--rule);width:100%;text-align:left}
+.drow:hover{background:#fff}
+.drow .dd{text-align:center;line-height:1.15}
+.drow .dd b{display:block;font-family:var(--mono);font-size:19px;font-weight:600}
+.drow .dd small{font-size:11px;color:var(--ink-3)}
+.drow.today .dd b,.drow.today .dd small{color:var(--pen)}
+.drow .dx{min-width:0}
+.drow .dots{display:flex;gap:4px;margin-bottom:3px}
+.drow .dx p{font-size:14px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drow .dn{font-family:var(--mono);font-size:12px;color:var(--ink-3);display:flex;flex-direction:column;align-items:flex-end;gap:4px;white-space:nowrap}
+.rvtag{font-family:var(--sans);font-size:10px;color:var(--pen);border:1px solid var(--pen);border-radius:4px;padding:0 4px;line-height:15px}
+.wtag{font-family:var(--sans);font-size:10px;color:var(--warn)}
+.dtoday{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1.5px dashed var(--rule);border-radius:12px;padding:12px 14px;margin:14px 0 4px;color:var(--ink-2);font-size:14px}
+.dtoday b{font-family:var(--hand);font-size:17px;color:var(--ink);font-weight:400}
+.dtoday span{margin-left:auto;color:var(--pen);font-size:13px}
+.dtop{display:flex;align-items:center;justify-content:space-between}
+.dnav{display:flex;gap:8px}
+.dnav button{width:36px;height:36px;border:1px solid var(--rule);border-radius:50%;background:var(--sheet);color:var(--ink-2);font-size:18px;line-height:1}
+.dnav button:disabled{opacity:.3;cursor:default}
+.dayh{margin:0 2px 14px}
+.dayh h2{font-family:var(--hand);font-size:30px;font-weight:700;line-height:1.15}
+.dayh .y{font-family:var(--mono);font-size:12px;color:var(--ink-3);letter-spacing:.5px;margin-top:4px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.fpill{font-family:var(--sans);font-size:12px;display:inline-flex;align-items:center;gap:5px;background:var(--sheet);border:1px solid var(--rule);border-radius:999px;padding:1px 4px 1px 9px;color:var(--ink-2)}
+.fpill button{color:var(--ink-3);font-size:13px;padding:0 5px}
+.dayrv{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:center;width:100%;text-align:left;background:var(--sheet);border:1px solid var(--rule);border-radius:12px;padding:12px 14px;margin-top:18px}
+.dayrv b{font-size:14px}
+.dayrv i{font-style:normal;color:var(--pen);font-size:13px}
+.dayrv p{grid-column:1/-1;font-family:var(--hand);color:var(--ink-2);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rvbar{display:flex;align-items:center;gap:8px;margin:2px 0 14px}
+.rvbar .tabs{flex:1;padding:0}
+.rvbar>button{font-size:13px;color:var(--pen);flex:none}
+.tab .cnt{font-family:var(--mono);font-size:10px;background:var(--warn);color:#fff;border-radius:999px;padding:0 5px;line-height:15px}
+.rvli{display:block;width:100%;text-align:left;background:var(--sheet);border:1px solid var(--rule);border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.rvli:hover{border-color:#C3CCD5}
+.rvli .rh{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.rvli .pl{font-weight:600;font-size:15px}
+.rvli .st{margin-left:auto;font-size:11px;color:var(--ink-3)}
+.rvli .st.err{color:var(--warn)}
+.rvli p{font-family:var(--hand);font-size:15px;color:var(--ink-2);line-height:1.65;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.newdot{width:7px;height:7px;border-radius:50%;background:var(--warn);flex:none}
+.rvdoc{background:var(--sheet);border:1px solid var(--rule);border-radius:14px;padding:20px 18px 14px;position:relative;overflow:hidden}
+.rvdoc::before{content:"";position:absolute;left:0;top:0;right:0;height:4px;background:var(--pen)}
+.rvdoc.k-week::before{background:var(--ink)}.rvdoc.k-month::before{background:var(--gold)}
+.rvdoc .rvh{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-3);letter-spacing:1px}
+.rvdoc h2{font-size:22px;line-height:1.3;margin:8px 0 2px}
+.rvdoc .meta{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+.rvstale{margin-top:12px;background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:8px 10px;font-size:13px;display:flex;align-items:center;gap:10px}
+.rvstale button{margin-left:auto;color:var(--warn);font-weight:600;font-size:13px;white-space:nowrap}
+.rvbody{font-family:var(--hand);color:var(--pen);font-size:17px;line-height:1.9;white-space:pre-wrap;margin:16px 0 18px;text-wrap:pretty}
+.rvbody.wait{color:var(--ink-3)}
+.rvbody.err{color:var(--warn);font-family:var(--sans);font-size:14px}
+.rvfoot{border-top:1px dashed var(--rule);padding-top:12px}
+.rvfoot .q{font-size:12px;color:var(--ink-3);letter-spacing:1px}
+.rvfoot .rate{margin-top:8px}
+.rvops{display:flex;align-items:center;gap:18px;margin-top:14px;font-size:13px}
+.rvops button{color:var(--ink-2)}
+.rvops .go{color:var(--pen)}
+.rvops .del{margin-left:auto;color:var(--ink-3)}
+.rvtalk .thread{margin-top:0}
+.rvtalk .replybox{margin-top:10px}
+.rvtalk .tip{font-size:13px;color:var(--ink-3);margin:0 2px}
 .rvchat{display:inline-flex;align-items:center;gap:4px;margin-top:10px;font-size:13px;color:var(--pen);font-weight:600;border:1px solid var(--pen);border-radius:999px;padding:5px 12px;background:transparent}
 </style>
 </head>
@@ -1351,7 +1426,7 @@ function afterVoice(){
 }
 
 /* ============ 视图 ============ */
-let V={tab:'home',pid:null,filter:'all',replyOpen:null,lt:'stuck',lcat:'all',lpid:'all',showSolved:false,ideaAll:false,reasonFor:null};
+let V={tab:'home',day:null,rid:null,mopen:{},dirY:0,rvk:'day',pid:null,filter:'all',replyOpen:null,lt:'stuck',lcat:'all',lpid:'all',showSolved:false,ideaAll:false,reasonFor:null};
 const $=s=>document.querySelector(s);
 function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove('show'),1800);}
 const AN=()=>esc(S.settings.aiName||'小记');
@@ -1362,11 +1437,15 @@ function render(){
   else if(V.tab==='projects')a.innerHTML=viewProjects();
   else if(V.tab==='lists')a.innerHTML=viewLists();
   else if(V.tab==='settings')a.innerHTML=viewSettings();
+  else if(V.tab==='day'&&V.day)a.innerHTML=viewDay();
+  else if(V.tab==='reviews')a.innerHTML=viewReviews();
+  else if(V.tab==='review')a.innerHTML=viewReview();
   else {V.tab='home';a.innerHTML=viewHome();}
-  const openN=attentionCount();
-  const navs=[['home','✎','手记'],['projects','▦','项目'],['lists','◇','清单'],['settings','⚙','设置']];
-  const cur=V.tab==='project'?'projects':V.tab;
-  $('#nav').innerHTML=navs.map(([k,i,l])=>`<button class="${cur===k?'on':''}" data-nav="${k}"><i>${i}</i>${l}${k==='lists'&&openN?`<span class="badge">${openN}</span>`:''}</button>`).join('');
+  const openN=attentionCount();const rvN=S.reviews.filter(r=>r.status==='done'&&!r.seen).length;
+  const navs=[['home','✎','手记'],['reviews','◎','复盘'],['projects','▦','项目'],['lists','◇','清单'],['settings','⚙','设置']];
+  const cur={project:'projects',day:'home',review:'reviews'}[V.tab]||V.tab;
+  const bd={lists:openN,reviews:rvN};
+  $('#nav').innerHTML=navs.map(([k,i,l])=>`<button class="${cur===k?'on':''}" data-nav="${k}"><i>${i}</i>${l}${bd[k]?`<span class="badge">${bd[k]}</span>`:''}</button>`).join('');
   $('#fab').style.display=V.tab==='settings'?'none':'flex';$('#vfab').style.display=V.tab==='settings'?'none':'grid';
 }
 function header(title,sub){const d=new Date();
@@ -1389,31 +1468,100 @@ function viewHome(){
   const wrote=S.logs.some(l=>daysAgo(l.ts)===0);
   let h=header('项目手记',`${greet()}${S.settings.nick?'，'+esc(S.settings.nick):''}。在做的项目有 ${act.length} 个${wrote?'。':'，今天还没写。'}`);
   if(!S.settings.key)h+=`<div class="nudge"><div class="hand">还没接上 AI。到「设置」里填一下 API Key，${AN()}才能回你。</div><button data-nav="settings">去设置</button></div>`;
-  S.reviews.filter(r=>r.status==='done'&&!r.seen).sort((a,b)=>b.ts-a.ts).slice(0,2).forEach(r=>h+=`<div class="rvnew"><div class="who">${AN()}写好了${{day:'今天的复盘',week:'这周的复盘',month:'这个月的复盘'}[r.kind]}</div>${reviewCard(r,false)}</div>`);
+  const unseen=S.reviews.filter(r=>r.status==='done'&&!r.seen).sort((a,b)=>b.ts-a.ts);
+  if(unseen.length)h+=`<div class="nudge"><div class="hand">${AN()}写好了${RV_NEWNAME[unseen[0].kind]}${unseen.length>1?`，还有 ${unseen.length-1} 篇没看`:''}。</div><button data-rid="${unseen[0].id}">去看看</button></div>`;
   h+=openerCard();
   const pend=S.logs.filter(l=>l.status==='confirm');
   pend.forEach(l=>h+=`<div class="nudge"><div class="hand">有一条记录等你确认：${esc(l.question||'有几段不确定归到哪个项目')}</div><button data-confirm="${l.id}">去确认</button></div>`);
-  h+=`<div class="tabs" style="margin-top:14px"><button class="tab ${V.filter==='all'?'on':''}" data-filter="all">全部</button>${act.map(p=>`<button class="tab ${V.filter===p.id?'on':''}" data-filter="${p.id}"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</button>`).join('')}</div>`;
-  const ls=S.logs.filter(l=>V.filter==='all'||logPids(l).includes(V.filter)||(l.forcePid===V.filter&&!l.items.length)).sort((a,b)=>b.ts-a.ts);
-  if(!ls.length)h+=`<div class="empty"><span class="hand">这里还空着</span>点右下角「写一笔」，几个项目混着写也行。</div>`;
-  h+=timeline(ls.slice(0,60));
-  const rk=V.rvk||'day';const rs=S.reviews.filter(r=>r.kind===rk&&r.status!=='deleted').sort((a,b)=>a.period<b.period?1:-1);
-  const curP=periodOf(rk,Date.now());
-  h+=`<div class="sec"><h2>复盘</h2><button data-act="rvsettings">时间设置</button></div>
-  <div class="tabs" style="margin-bottom:10px">${['day','week','month'].map(k=>`<button class="tab ${rk===k?'on':''}" data-rvk="${k}">${{day:'每日',week:'每周',month:'每月'}[k]}</button>`).join('')}</div>`;
-  h+=rs.slice(0,V.rvMore?30:3).map(r=>reviewCard(r,true)).join('')||`<p class="sub">${rvCfg(rk).on?`${{day:'每天',week:'每周日',month:'每月最后一天'}[rk]} ${rvCfg(rk).t}，${AN()}会自动写${rk==='day'?'当天':rk==='week'?'这一周':'这个月'}的复盘。那时没打开的话，下次打开时补上。`:'自动生成已关闭，可以在「时间设置」里打开。'}</p>`;
-  if(rs.length>3)h+=`<button class="fold" data-act="rvmore">${V.rvMore?'收起':'看更早的 '+(rs.length-3)+' 篇'}</button>`;
-  if(!rvFind(rk,curP)||rvFind(rk,curP).status==='error')h+=`<button class="ghost" data-rvnow="${rk}">现在就写${rk==='day'?'今天':rk==='week'?'这周':'这个月'}的复盘</button>`;
+  h+=filterTabs(act);
+  const ls=filteredLogs();
+  const today=dkey(Date.now());
+  if(V.filter==='all'&&!ls.some(l=>dkey(l.ts)===today))h+=`<button class="dtoday" data-act="compose"><b>今天</b>还没写<span>写一笔 →</span></button>`;
+  if(!ls.length){h+=`<div class="empty"><span class="hand">这里还空着</span>${V.filter==='all'?'点右下角「写一笔」，几个项目混着写也行。':'这个项目还没有记录。'}</div>`;return h;}
+  h+=directory(ls);
+  return h;
+}
+const RV_NEWNAME={day:'今天的复盘',week:'这周的复盘',month:'这个月的复盘'};
+const RV_KNAME={day:'每日复盘',week:'每周复盘',month:'每月复盘'};
+const RV_TAG={day:'日',week:'周',month:'月'};
+function filteredLogs(){return S.logs.filter(l=>V.filter==='all'||logPids(l).includes(V.filter)||(l.forcePid===V.filter&&!l.items.length)).sort((a,b)=>b.ts-a.ts);}
+function filterTabs(act){return `<div class="tabs" style="margin-top:14px"><button class="tab ${V.filter==='all'?'on':''}" data-filter="all">全部</button>${act.map(p=>`<button class="tab ${V.filter===p.id?'on':''}" data-filter="${p.id}"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</button>`).join('')}</div>`;}
+function logPreview(l){const t=String(l.raw||'').replace(/\s+/g,' ').trim();if(t)return t;const i=(l.items||[])[0];return i?i.content:((l.photos||[]).length?'（照片）':'');}
+// 手记目录：年 → 月（可折叠）→ 日
+function directory(ls){
+  const byDay=new Map();ls.forEach(l=>{const k=dkey(l.ts);if(!byDay.has(k))byDay.set(k,[]);byDay.get(k).push(l);});
+  const months=new Map();[...byDay.keys()].forEach(k=>{const m=k.slice(0,7);if(!months.has(m))months.set(m,[]);months.get(m).push(k);});
+  const mkeys=[...months.keys()];const curM=dkey(Date.now()).slice(0,7);
+  const isOpen=m=>V.mopen[m]!==undefined?V.mopen[m]:(m===curM||m===mkeys[0]);
+  let h='',lastY='';
+  mkeys.forEach(m=>{const y=m.slice(0,4);
+    if(y!==lastY){const yd=[...byDay.keys()].filter(k=>k.startsWith(y));const yn=yd.reduce((s,k)=>s+byDay.get(k).length,0);
+      h+=`<div class="yr"><b>${y}</b><small>${yd.length} 天 · ${yn} 条</small></div>`;lastY=y;}
+    const days=months.get(m);const n=days.reduce((s,k)=>s+byDay.get(k).length,0);const open=isOpen(m);
+    h+=`<div class="mon ${open?'open':''}"><button class="mh" data-mon="${m}" aria-expanded="${open}"><span class="mn">${+m.slice(5)}月</span><span class="mc">${days.length} 天 · ${n} 条</span><span class="car">▾</span></button>`;
+    if(open)days.forEach(k=>{const dl=byDay.get(k);const d=new Date(k);
+      const pids=[...new Set(dl.flatMap(l=>logPids(l).length?logPids(l):(l.forcePid?[l.forcePid]:[])))].filter(P);
+      const rv=rvFind('day',k);const warn=dl.some(l=>['confirm','error'].includes(l.status));
+      const first=dl[dl.length-1];
+      h+=`<button class="drow ${daysAgo(k)===0?'today':''}" data-day="${k}"><span class="dd"><b>${d.getDate()}</b><small>${daysAgo(k)===0?'今天':'周'+WEEK[d.getDay()]}</small></span><span class="dx"><span class="dots">${pids.map(id=>`<span class="dot" style="background:${P(id).color}" title="${esc(P(id).name)}"></span>`).join('')}</span><p>${esc(logPreview(first))}</p></span><span class="dn">${dl.length} 条${rv&&rv.status==='done'?'<span class="rvtag">复盘</span>':''}${warn?'<span class="wtag">待处理</span>':''}</span></button>`;});
+    h+=`</div>`;});
+  return h;
+}
+// 某一天
+function viewDay(){
+  const k=V.day;const all=filteredLogs();const ls=all.filter(l=>dkey(l.ts)===k).sort((a,b)=>a.ts-b.ts);
+  const keys=[...new Set(all.map(l=>dkey(l.ts)))];const i=keys.indexOf(k);
+  const newer=i>0?keys[i-1]:(i<0?keys.filter(x=>x>k).pop():null),older=i>=0?keys[i+1]:keys.find(x=>x<k);
+  const d=new Date(k);const n=daysAgo(k);const fp=V.filter!=='all'&&P(V.filter);
+  let h=`<div class="dtop"><button class="back" data-nav="home">← 目录</button><div class="dnav"><button ${older?`data-day="${older}"`:'disabled'} aria-label="前一天">‹</button><button ${newer?`data-day="${newer}"`:'disabled'} aria-label="后一天">›</button></div></div>`;
+  h+=`<div class="dayh"><h2>${d.getMonth()+1}月${d.getDate()}日 · 周${WEEK[d.getDay()]}</h2><div class="y"><span>${d.getFullYear()}${n===0?' · 今天':n===1?' · 昨天':''} · ${ls.length} 条</span>${fp?`<span class="fpill"><span class="dot" style="background:${fp.color}"></span>只看 ${esc(fp.name)}<button data-filter="all" aria-label="看全部">×</button></span>`:''}</div></div>`;
+  if(!ls.length)h+=`<div class="empty"><span class="hand">这天没有记录</span>${fp?'这个项目在这天没写过。':''}</div>`;
+  h+=ls.map(logCard).join('');
+  const rv=rvFind('day',k);
+  if(rv&&rv.status!=='deleted')h+=`<button class="dayrv" data-rid="${rv.id}"><span class="rk">日</span><b>这天的复盘</b><i>${rv.status==='pending'?'正在写……':'打开 →'}</i>${rv.status==='done'?`<p>${esc(rv.text.replace(/\s+/g,' '))}</p>`:''}</button>`;
+  else if(ls.length&&S.settings.key)h+=`<button class="ghost" style="margin-top:18px" data-rvday="${k}">让${AN()}写这天的复盘</button>`;
+  return h;
+}
+// 复盘版块
+function viewReviews(){
+  const rk=V.rvk||'day';const curP=periodOf(rk,Date.now());
+  const rs=S.reviews.filter(r=>r.kind===rk&&r.status!=='deleted').sort((a,b)=>a.period<b.period?1:-1);
+  let h=header('复盘',`${AN()}陪你回看：每天、每周、每月各一篇。`);
+  h+=`<div class="rvbar"><div class="tabs">${['day','week','month'].map(k=>{const u=S.reviews.filter(r=>r.kind===k&&r.status==='done'&&!r.seen).length;return `<button class="tab ${rk===k?'on':''}" data-rvk="${k}">${{day:'每日',week:'每周',month:'每月'}[k]}${u?`<span class="cnt">${u}</span>`:''}</button>`;}).join('')}</div><button data-act="rvsettings">时间设置</button></div>`;
+  if(!rvFind(rk,curP)||rvFind(rk,curP).status==='error')h+=`<button class="ghost" style="margin:0 0 14px" data-rvnow="${rk}">现在就写${rk==='day'?'今天':rk==='week'?'这周':'这个月'}的复盘</button>`;
+  if(!rs.length)return h+`<div class="empty"><span class="hand">还没有${RV_KNAME[rk]}</span>${rvCfg(rk).on?`${{day:'每天',week:'每周日',month:'每月最后一天'}[rk]} ${rvCfg(rk).t}，${AN()}会自动写。那时没打开的话，下次打开时补上。`:'自动生成已关闭，可以在「时间设置」里打开。'}</div>`;
+  const grp=r=>rk==='month'?r.period.slice(0,4)+'年':r.period.slice(0,7).replace('-','年')+'月';
+  const lim=V.rvMore?rs.length:20;let last='';
+  rs.slice(0,lim).forEach(r=>{const g=grp(r);if(g!==last){h+=`<div class="day">${g}</div>`;last=g;}
+    const st=r.status==='pending'?'<span class="st">正在写……</span>':r.status==='error'?'<span class="st err">没写成</span>':((r.thread||[]).some(m=>m.role==='user')?'<span class="st">聊过</span>':'');
+    h+=`<button class="rvli" data-rid="${r.id}"><div class="rh"><span class="rk k-${r.kind}">${RV_TAG[r.kind]}</span><span class="pl">${periodLabel(r.kind,r.period)}</span>${r.status==='done'&&!r.seen?'<span class="newdot" aria-label="未读"></span>':''}${st}</div>${r.status==='done'?`<p>${esc(r.text.replace(/\s+/g,' '))}</p>`:''}</button>`;});
+  if(rs.length>20)h+=`<button class="fold" data-act="rvmore">${V.rvMore?'收起':'看更早的 '+(rs.length-20)+' 篇'}</button>`;
+  return h;
+}
+function viewReview(){
+  const r=S.reviews.find(x=>x.id===V.rid);
+  if(!r||r.status==='deleted'){V.tab='reviews';return viewReviews();}
+  const [f,t]=periodRange(r.kind,r.period);const more=r.status==='done'?logsIn(f,t).length-(r.logCount||0):0;
+  let h=`<button class="back" data-nav="reviews">← 复盘</button>`;
+  h+=`<article class="rvdoc k-${r.kind}"><div class="rvh"><span class="rk k-${r.kind}">${RV_TAG[r.kind]}</span>${RV_KNAME[r.kind]}</div>
+  <h2>${periodLabel(r.kind,r.period)}</h2>${r.status==='done'?`<div class="meta">${r.logCount||0} 条记录 · 写于 ${dkey(r.ts).slice(5).replace('-','.')} ${hm(r.ts)}</div>`:''}
+  ${more>0?`<div class="rvstale">写完之后又记了 ${more} 条<button data-rvregen="${r.kind}|${r.period}">重写一篇</button></div>`:''}
+  <div class="rvbody ${r.status==='pending'?'wait':r.status==='error'?'err':''}">${r.status==='pending'?`正在翻你${r.kind==='day'?'这天':r.kind==='week'?'这一周':'这个月'}的本子……`:esc(r.text)}</div>`;
+  if(r.status==='done')h+=`<div class="rvfoot"><div class="q">这篇写得怎么样</div>${ratingRow(r.id,'review')}</div>`;
+  if(r.status!=='pending')h+=`<div class="rvops">${r.kind==='day'?`<button class="go" data-day="${r.period}">看这天的手记</button>`:''}${r.status==='error'?`<button class="go" data-rvregen="${r.kind}|${r.period}">重试</button>`:more>0?'':`<button data-rvregen="${r.kind}|${r.period}">重写</button>`}<button class="del" data-delrev="${r.id}">删除</button></div>`;
+  if(r.kind!=='day'&&r.status==='done'&&Date.now()-(S.settings.lastExport||0)>7*DAY)h+=`<div class="hint" style="margin-top:12px">数据只存在这台设备的浏览器里，${S.settings.lastExport?'上次备份是 '+daysAgo(S.settings.lastExport)+' 天前':'还没备份过'}。<button class="mini" style="color:var(--pen)" data-act="export">现在备份</button></div>`;
+  h+=`</article>`;
+  if(r.status==='done')h+=`<div class="sec"><h2>和${AN()}聊聊</h2></div><div class="rvtalk">${(r.thread||[]).length?'':`<p class="tip">回它结尾的问题，或者说说你的感受。</p>`}${rvThread(r)}</div>`;
   return h;
 }
 function rvThread(r){let th='';
   (r.thread||[]).forEach(m=>th+=m.role==='memo'?`<div class="memo-line">✓ ${esc(m.text)}</div>`:m.role==='user'?`<div class="me">${esc(m.text)}</div>`:`<div class="note${m.err?' err':''}" style="margin-top:8px"><div class="txt">${esc(m.text)}</div></div>`);
   if(r.replying)th+=`<div class="note wait" style="margin-top:8px"><div class="txt">……</div></div>`;
-  const open=V.rvReply===r.id;
+  const open=V.rvReply===r.id||V.tab==='review';
   return `${th?`<div class="thread">${th}</div>`:''}${open?`<form class="replybox" data-rvreply="${r.id}"><input name="t" placeholder="${(r.thread||[]).length?'回一句……':'回它结尾的问题，或者说说你的感受……'}" autocomplete="off" required><button>发送</button></form>`:(r.replying?'':`<button class="rvchat" data-rvchat="${r.id}">💬 ${(r.thread||[]).some(m=>m.role==='user')?'接着聊':'聊几句'}</button>`)}`;}
 function reviewCard(r,inList){
   const [f,t]=periodRange(r.kind,r.period);const more=r.status==='done'?logsIn(f,t).length-(r.logCount||0):0;
-  return `<div class="review ${r.kind}"><div class="rt"><span class="rk">${{day:'日',week:'周',month:'月'}[r.kind]}</span>${periodLabel(r.kind,r.period)}${more>0?` · <span style="color:var(--warn)">之后又写了 ${more} 条</span> <button class="mini" data-rvregen="${r.kind}|${r.period}">重写</button>`:''}</div><div class="txt" style="${r.status==='error'?'color:var(--warn);font-family:var(--sans);font-size:13px':''}">${r.status==='pending'?`正在翻你${r.kind==='day'?'今天':r.kind==='week'?'这一周':'这个月'}的本子……`:esc(r.text)}</div>${r.status==='done'?ratingRow(r.id,'review')+rvThread(r):''}${!inList&&r.kind!=='day'&&r.status==='done'&&Date.now()-(S.settings.lastExport||0)>7*DAY?`<div class="hint" style="margin-top:8px">数据只存在这台设备的浏览器里，${S.settings.lastExport?'上次备份是 '+daysAgo(S.settings.lastExport)+' 天前':'还没备份过'}。<button class="mini" data-act="export">现在备份</button></div>`:''}${r.status!=='pending'?`<div class="eacts">${!inList&&!r.seen?`<button style="color:var(--pen)" data-rvseen="${r.id}">看过了</button>`:''}${r.status==='error'?`<button style="color:var(--pen)" data-rvregen="${r.kind}|${r.period}">重试</button>`:''}<button data-delrev="${r.id}">删除</button></div>`:''}</div>`;
+  return `<div class="review k-${r.kind}"><div class="rt"><span class="rk">${{day:'日',week:'周',month:'月'}[r.kind]}</span>${periodLabel(r.kind,r.period)}${more>0?` · <span style="color:var(--warn)">之后又写了 ${more} 条</span> <button class="mini" data-rvregen="${r.kind}|${r.period}">重写</button>`:''}</div><div class="txt" style="${r.status==='error'?'color:var(--warn);font-family:var(--sans);font-size:13px':''}">${r.status==='pending'?`正在翻你${r.kind==='day'?'今天':r.kind==='week'?'这一周':'这个月'}的本子……`:esc(r.text)}</div>${r.status==='done'?ratingRow(r.id,'review')+rvThread(r):''}${!inList&&r.kind!=='day'&&r.status==='done'&&Date.now()-(S.settings.lastExport||0)>7*DAY?`<div class="hint" style="margin-top:8px">数据只存在这台设备的浏览器里，${S.settings.lastExport?'上次备份是 '+daysAgo(S.settings.lastExport)+' 天前':'还没备份过'}。<button class="mini" data-act="export">现在备份</button></div>`:''}${r.status!=='pending'?`<div class="eacts">${!inList&&!r.seen?`<button style="color:var(--pen)" data-rvseen="${r.id}">看过了</button>`:''}${r.status==='error'?`<button style="color:var(--pen)" data-rvregen="${r.kind}|${r.period}">重试</button>`:''}<button data-delrev="${r.id}">删除</button></div>`:''}</div>`;
 }
 function timeline(ls){let h='',last='';ls.forEach(l=>{const k=dkey(l.ts);if(k!==last){h+=`<div class="day">${dayLabel(k)}</div>`;last=k;}h+=logCard(l);});return h;}
 
@@ -1602,7 +1750,7 @@ function fillCop(){const el=$('#cop');if(!el)return;let h='';const op=S.opener;
     if(op.status==='pending')h+=`<div class="cop wait"><b>${esc(AN())}</b>翻了翻你的本子……</div>`;
     else if(op.status==='done')h+=`<div class="cop"><b>${esc(AN())}</b>${esc(op.text)}<button data-act="dismissop">知道了</button></div>`;}
   const rv=S.reviews.filter(r=>r.status==='done'&&!r.seen).sort((a,b)=>b.ts-a.ts)[0];
-  if(rv)h+=`<div class="cop rv"><b>${esc(AN())}</b>写好了${{day:'今天的复盘',week:'这周的复盘',month:'这个月的复盘'}[rv.kind]}<button data-act="close">去看看</button></div>`;
+  if(rv)h+=`<div class="cop rv"><b>${esc(AN())}</b>写好了${{day:'今天的复盘',week:'这周的复盘',month:'这个月的复盘'}[rv.kind]}<button data-rid="${rv.id}">去看看</button></div>`;
   el.innerHTML=h;}
 const DKEY='xmsj_draft';
 function getDraft(){try{return localStorage.getItem(DKEY)||'';}catch(e){return '';}}
@@ -1729,8 +1877,12 @@ function removeLog(l){tomb(l.id);S.blockers.filter(b=>b.logId===l.id).forEach(b=
 document.addEventListener('click',ev=>{
   const t=ev.target.closest('button,[data-act]');if(!t)return;
   const d=t.dataset;
-  if(d.nav){V.tab=d.nav;V.replyOpen=null;render();scrollTo(0,0);return;}
+  if(d.nav){V.tab=d.nav;V.replyOpen=null;V.rvReply=null;render();scrollTo(0,0);return;}
   if(d.filter){V.filter=d.filter;render();return;}
+  if(d.mon){const m=d.mon;const cur=t.closest('.mon').classList.contains('open');V.mopen[m]=!cur;render();return;}
+  if(d.day){V.tab='day';V.day=d.day;V.replyOpen=null;closeSheet();render();scrollTo(0,0);return;}
+  if(d.rid){const r=S.reviews.find(x=>x.id===d.rid);if(!r)return;V.tab='review';V.rid=r.id;V.rvk=r.kind;V.reasonFor=null;if(r.status==='done'&&!r.seen){r.seen=true;save();}closeSheet();render();scrollTo(0,0);return;}
+  if(d.rvday){generateReview('day',d.rvday,true);const r=rvFind('day',d.rvday);if(r){V.tab='review';V.rid=r.id;V.rvk='day';render();scrollTo(0,0);}return;}
   if(d.lt){V.lt=d.lt;render();return;}
   if(d.golist){const p=P(d.golist);V.tab='lists';V.lt='gains';V.lcat='all';V.lpid=d.golist;render();scrollTo(0,0);return;}
   if(d.lcat){V.lcat=d.lcat;V.lpid='all';render();return;}
@@ -1760,7 +1912,7 @@ document.addEventListener('click',ev=>{
   if(d.delrev){if(!confirm('删除这篇复盘？自动生成不会再补写它。'))return;const r=S.reviews.find(x=>x.id===d.delrev);if(r){r.status='deleted';r.text='';r.seen=true;}save();render();return;}
   if(d.rvseen){const r=S.reviews.find(x=>x.id===d.rvseen);if(r){r.seen=true;save();render();}return;}
   if(d.rvk){V.rvk=d.rvk;V.rvMore=false;render();return;}
-  if(d.rvnow){generateReview(d.rvnow,periodOf(d.rvnow,Date.now()),true);return;}
+  if(d.rvnow){const per=periodOf(d.rvnow,Date.now());generateReview(d.rvnow,per,true);const r=rvFind(d.rvnow,per);if(r&&r.status==='pending'){V.tab='review';V.rid=r.id;render();scrollTo(0,0);}return;}
   if(d.rvregen){const [k,per]=d.rvregen.split('|');generateReview(k,per,true);return;}
   if(d.rvon){const k=d.rvon;S.settings.rv=S.settings.rv||{};S.settings.rv[k]={...rvCfg(k),on:!rvCfg(k).on};save();rvSheet();render();return;}
   if(d.rate){const [ref,kind,v]=d.rate.split('|');const src=kind==='reply'?L(ref)?.reply:kind==='opener'?S.opener?.text:S.reviews.find(r=>r.id===ref)?.text;
@@ -1820,7 +1972,7 @@ document.addEventListener('click',ev=>{
       const same=(l.photos||[]).map(p=>p.id).join()===photos.map(p=>p.id).join();
       Object.assign(l,{mt:Date.now(),raw,mode,forcePid,items:[],reply:'',thread:[],exception:false,rebuildPids:oldPids,photos,photoText:same?l.photoText:''});S.feedback=S.feedback.filter(f=>f.ref!==l.id);}
     else{setDraft('');l={id:uid('e'),ts:Date.now(),raw,mode,forcePid,items:[],mood:'neutral',reply:'',status:'splitting',thread:[],voiceEmotion:draft.voiceEmotion||'',photos,photoText:''};S.logs.push(l);}
-    save();closeSheet();if(V.tab!=='project')V.tab='home';scrollTo(0,0);runLog(l);return;
+    save();closeSheet();if(V.tab!=='project'){V.tab='day';V.day=dkey(l.ts);}scrollTo(0,0);runLog(l);return;
   }
   if(act==='saveproj'){
     const name=$('#pname').value.trim();if(!name){toast('给项目起个名字');return;}
@@ -1901,6 +2053,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){hiddenAt=D
   if(hiddenAt&&Date.now()-hiddenAt>10*60*1000)autoCompose();hiddenAt=0;checkReviews();makeOpener(false);});
 
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>
