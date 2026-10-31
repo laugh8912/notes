@@ -267,6 +267,11 @@ textarea.inp{min-height:150px;resize:vertical;line-height:1.7;background:#fff re
 .pill li::before{content:"";position:absolute;left:0;top:.7em;width:4px;height:1px;background:var(--ink-3)}
 .pill .fd{font-family:var(--mono);font-size:11px;color:var(--ink-2);margin-right:6px}
 .pact{display:flex;gap:16px;margin-top:6px}
+.memo-line{font-size:12px;color:var(--pen);margin:8px 0 0 14px;opacity:.85}
+.memlist{display:grid;gap:6px;margin-bottom:8px}
+.memitem{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--rule);border-radius:8px;padding:7px 10px;font-size:14px}
+.memitem span{flex:1}
+.memitem button{font-size:12px;color:var(--ink-2)}
 </style>
 </head>
 <body>
@@ -300,14 +305,14 @@ const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const DAY=864e5;
 
 /* ============ 数据层 ============ */
-function blank(){return {v:3,projects:[],logs:[],blockers:[],reviews:[],feedback:[],opener:null,
+function blank(){return {v:3,projects:[],logs:[],blockers:[],reviews:[],feedback:[],memory:[],opener:null,
   settings:{preset:'deepseek',base:PRESETS.deepseek.base,model:PRESETS.deepseek.model,key:'',aiName:'小记',nick:'',tone:'mid'}};}
 function load(){
   let d=null;try{d=JSON.parse(localStorage.getItem(KEY));}catch(e){}
   if(!d||!d.projects)return blank();
   return d.v===3?fixup(d):migrate(d);
 }
-function fixup(d){const b=blank();(d.reviews||[]).forEach(r=>{if(!r.kind){r.kind='week';r.period=r.week||weekKey(r.ts);r.seen=true;}});d.settings={...b.settings,...d.settings};['logs','blockers','reviews','feedback'].forEach(k=>d[k]=d[k]||[]);
+function fixup(d){const b=blank();(d.reviews||[]).forEach(r=>{if(!r.kind){r.kind='week';r.period=r.week||weekKey(r.ts);r.seen=true;}});d.settings={...b.settings,...d.settings};['logs','blockers','reviews','feedback','memory'].forEach(k=>d[k]=d[k]||[]);
   d.projects.forEach(p=>{p.followUps=p.followUps||[];p.profiling=false;});return d;}
 function migrate(d){
   const n=blank();const os=d.settings||{};
@@ -415,8 +420,12 @@ ${TONES[st.tone||'mid'].line}
 - 不编造 TA 没说过的事。记不清就直说，或者问 TA。
 - TA 情绪明显低落时，只陪伴，不分析、不给方案。
 - 如果 TA 流露出伤害自己的念头，认真关心 TA，并建议 TA 联系身边信任的人或专业帮助。
-- 提到钱和时间时，只陈述事实，问一句是否在计划内，不评判 TA 的选择。`;
+- 提到钱和时间时，只陈述事实，问一句是否在计划内，不评判 TA 的选择。${memoryText()}`;
 }
+function memoryText(){const m=(S.memory||[]);if(!m.length)return '';
+  return '\n\n【你记得的关于 TA 的事（TA 亲口说的，要遵守、要用上）】\n'+m.map(x=>'- '+x.text).join('\n');}
+function threadText(l,max=6,len=80){const t=(l.thread||[]).filter(m=>!m.err&&m.role!=='memo');if(!t.length)return '';
+  return '｜之后你们接着聊：'+t.slice(-max).map(m=>(m.role==='user'?'TA：':'你：')+m.text.slice(0,len)).join(' / ');}
 // 拆分、档案这类"只输出 JSON"的任务不带完整人设：只留名字和称呼，避免"口语聊天"和"只输出 JSON"互相打架，也省 token
 function personaLite(){
   const st=S.settings;const nm=st.aiName||'小记';
@@ -566,7 +575,7 @@ async function replyLog(l){
 项目档案：
 ${profilesText(pids)}
 最近记录：
-${recent.map(x=>`- ${dkey(x.ts)}｜${logPids(x).map(id=>P(id).name).join('、')}｜${x.raw.slice(0,150)}${x.reply&&x.reply!=='记下了。'?'｜你当时回：'+x.reply.slice(0,60):''}`).join('\n')||'（无）'}
+${recent.map(x=>`- ${dkey(x.ts)}｜${logPids(x).map(id=>P(id).name).join('、')}｜${x.raw.slice(0,150)}${x.reply&&x.reply!=='记下了。'?'｜你当时回：'+x.reply.slice(0,60):''}${threadText(x)}`).join('\n')||'（无）'}
 未解决磕绊：
 ${openBlockersText(pids)}
 今天拆分结果：${JSON.stringify(l.items.map(i=>({project:P(i.pid)?.name,type:i.type,content:i.content,time_minutes:i.minutes,money_yuan:i.money,resolved:i.resolves?B(i.resolves)?.content:undefined,mentioned_again:i.mentions?B(i.mentions)?.content:undefined})))}
@@ -710,7 +719,7 @@ ${PROFILE_FORMAT}`;
 旧档案（仅供参考，格式不要沿用）：
 ${p.profile||'（无）'}
 近期记录（按时间顺序）：
-${ls.map(l=>`- ${dkey(l.ts)}｜${l.raw.slice(0,200)}｜整理出的条目：${l.items.filter(i=>i.pid===pid).map(i=>TYPES[i.type]+'：'+i.content).join('；')}`).join('\n')}
+${ls.map(l=>`- ${dkey(l.ts)}｜${l.raw.slice(0,200)}｜整理出的条目：${l.items.filter(i=>i.pid===pid).map(i=>TYPES[i.type]+'：'+i.content).join('；')}${threadText(l,8,100)}`).join('\n')}
 未解决磕绊：
 ${openBlockersText([pid])}
 已解决的磕绊：
@@ -826,7 +835,7 @@ async function generateReview(kind,period,manual){
   if(old&&old.status==='pending'){if(manual)toast('正在写，稍等一下');return false;}
   const rv={id:old?.id||uid('r'),kind,period,ts:Date.now(),text:'',status:'pending',logCount:ls.length,seen:false};
   S.reviews=S.reviews.filter(r=>r!==old);S.reviews.unshift(rv);save();render();
-  const recLines=ls.map(l=>`- ${kind==='day'?hm(l.ts):dkey(l.ts)}｜${logPids(l).map(id=>P(id).name).join('、')}｜情绪 ${l.mood}｜${l.raw.slice(0,kind==='month'?100:160)}`).join('\n');
+  const recLines=ls.map(l=>`- ${kind==='day'?hm(l.ts):dkey(l.ts)}｜${logPids(l).map(id=>P(id).name).join('、')}｜情绪 ${l.mood}｜${l.raw.slice(0,kind==='month'?100:160)}${kind==='month'?'':threadText(l,4,60)}`).join('\n');
   let task,user;
   if(kind==='day'){
     task=`任务：现在是晚上，给用户写今天的复盘，像睡前朋友陪 TA 回看一下今天。
@@ -937,10 +946,77 @@ async function followUp(l,text){
   l.thread=l.thread||[];l.thread.push({role:'user',text,ts:Date.now()});l.replying=true;save();render();
   const msgs=[{role:'system',content:persona()+'\n\n你在和用户接着聊 TA 的一条记录。像微信聊天一样接话，1～3 句，不超过 100 字。\n项目档案：\n'+profilesText(pids)+'\n未解决磕绊：\n'+openBlockersText(pids)+feedbackText()},
     {role:'user',content:l.raw},{role:'assistant',content:l.reply||'记下了。'}];
-  l.thread.forEach(m=>msgs.push({role:m.role==='user'?'user':'assistant',content:m.text}));
-  try{l.thread.push({role:'ai',text:await chat(msgs,0.8),ts:Date.now()});}
+  l.thread.filter(m=>m.role!=='memo'&&!m.err).forEach(m=>msgs.push({role:m.role==='user'?'user':'assistant',content:m.text}));
+  let ok=false;
+  try{l.thread.push({role:'ai',text:await chat(msgs,0.8),ts:Date.now()});ok=true;}
   catch(err){l.thread.push({role:'ai',text:'（没回上：'+err.message+'）',ts:Date.now(),err:true});}
   l.replying=false;save();render();
+  if(ok)digestThread(l);
+}
+
+/* ============ 把聊天内容记进记忆 ============ */
+function newChatPart(l){const t=l.thread||[];const from=l.digested||0;
+  return {from,msgs:t.slice(from).filter(m=>m.role!=='memo'&&!m.err),end:t.length};}
+function digestThread(l){
+  const pids=logPids(l);if(!pids.length||!S.settings.key)return;
+  const pid=pids[0];
+  return queueProfile(pid,()=>digestOne(l,pids));
+}
+async function digestOne(l,pids){
+  if(!L(l.id))return;
+  const part=newChatPart(l);if(!part.msgs.some(m=>m.role==='user'))return;
+  const pid=pids[0];const p=P(pid);if(!p)return;
+  p.profiling=true;render();
+  const sys=personaLite()+`
+
+任务：用户在一条记录下面和你接着聊了几句。从这段对话里找出值得记住的新信息，更新记忆。只输出 JSON。
+
+【要找的东西】
+1. 项目档案：对话里有新的事实（进展、卡点、计划、决定、纠正你记错的地方）就更新档案；没有新事实，profile 输出 null。
+2. 磕绊：TA 说某个未解决磕绊已经解决了 → resolved_blocker_ids；说出了新的困难 → new_blockers（一句话）。
+3. 待回访 follow_ups：TA 说了打算、下次要做的事。
+4. 关于 TA 本人的长期信息 about_me_add：偏好（比如"别叫我宝贝""回复短一点""不想要建议"）、身份背景、生活状况、反复强调的价值观。只记 TA 明确说出、以后每次都该用上的；不记某个项目的进展（那属于档案），不记一次性的情绪。每条一句话，≤30 字。
+5. 已有的"关于 TA"里，被 TA 明确推翻或纠正的，放进 about_me_remove（照抄原句）。
+6. noted：用一句话告诉 TA 你记下了什么（≤30 字，口语，比如"记下了：所长那边改成下周三访谈"）；什么新信息都没有就输出空字符串。
+
+【档案规则（profile 不为 null 时）】
+${PROFILE_RULES}
+${FU_RULE}
+
+【输出格式】
+{"profile":${PROFILE_FORMAT.replace(/^\{"profile":/,'').replace(/,"follow_ups":[\s\S]*$/,'')}或null,"follow_ups":[{"content":"……","due_date":"YYYY-MM-DD"}]或null,"resolved_blocker_ids":[],"new_blockers":[],"about_me_add":[],"about_me_remove":[],"noted":""}`;
+  const user=`今天：${dkey(Date.now())}（周${WEEK[new Date().getDay()]}）
+项目：${p.name}，${p.desc||p.cat}${pids.length>1?`（这条记录同时涉及：${pids.slice(1).map(id=>P(id)?.name).join('、')}）`:''}
+当前档案：
+${p.profile||'（空）'}
+未解决磕绊：
+${openBlockersText(pids)}
+现有的待回访：${JSON.stringify(p.followUps.filter(f=>!f.done).map(f=>({content:f.content,due_date:f.due})))}
+已完成或不用再问：${fuClosedText(p)}
+已经记得的关于 TA：${JSON.stringify((S.memory||[]).map(m=>m.text))}
+
+【原记录 ${dkey(l.ts)}】${l.raw}
+【你当时的回应】${l.reply||'（无）'}
+【之前已经聊过的】${(l.thread||[]).slice(0,part.from).filter(m=>m.role!=='memo'&&!m.err).map(m=>(m.role==='user'?'TA：':'你：')+m.text).join(' / ')||'（无）'}
+【这次新聊的】
+${part.msgs.map(m=>(m.role==='user'?'TA：':'你：')+m.text).join('\n')}`;
+  try{
+    const out=parseJSON(await chat([{role:'system',content:sys},{role:'user',content:user}],0.3,{json:true}));
+    const notes=[];
+    if(out.profile&&typeof out.profile==='object'){applyProfile(p,{profile:out.profile,follow_ups:Array.isArray(out.follow_ups)?out.follow_ups:undefined});}
+    else if(Array.isArray(out.follow_ups))applyProfile(p,{follow_ups:out.follow_ups});
+    (out.resolved_blocker_ids||[]).forEach(id=>{const b=B(id);if(b&&!b.solved&&pids.includes(b.pid)){b.solved=true;b.solvedTs=Date.now();b.solvedBy=l.id+':chat';b.last=Date.now();}});
+    (out.new_blockers||[]).filter(t=>t&&String(t).trim()).slice(0,3).forEach(t=>{S.blockers.push({id:uid('b'),pid,content:String(t).slice(0,60),solved:false,first:Date.now(),last:Date.now(),fromChat:l.id,logId:l.id});});
+    const rm=(out.about_me_remove||[]).map(String);
+    if(rm.length)S.memory=S.memory.filter(m=>!rm.some(r=>fuSim(r,m.text)>=0.8));
+    (out.about_me_add||[]).filter(t=>t&&String(t).trim()).slice(0,3).forEach(t=>{t=String(t).slice(0,40);
+      const dup=S.memory.find(m=>fuSim(m.text,t)>=0.7);if(dup){dup.text=t;dup.ts=Date.now();}else S.memory.push({id:uid('m'),text:t,ts:Date.now(),from:l.id});});
+    if(S.memory.length>20)S.memory=S.memory.slice(-20);
+    l.digested=part.end;
+    if(out.noted&&String(out.noted).trim()){l.thread.push({role:'memo',text:String(out.noted).trim().slice(0,60),ts:Date.now()});}
+    p.profileErr='';
+  }catch(err){p.profileErr='聊天内容没记进档案：'+(err.message||String(err));}
+  p.profiling=false;save();render();
 }
 
 /* ============ 反馈 ============ */
@@ -969,6 +1045,7 @@ function download(text,name,type){const b=new Blob([text],{type:type+';charset=u
 function toMarkdown(){
   const nm=S.settings.aiName||'小记';
   const out=[`# 项目手记`,``,`导出于 ${dkey(Date.now())} ${hm(Date.now())} · ${S.projects.length} 个项目 · ${S.logs.length} 条记录`,``];
+  if((S.memory||[]).length)out.push(`## ${nm}记得的关于我`,``,...S.memory.map(m=>`- ${m.text}`),``);
   S.projects.forEach(p=>{
     const st=projStats(p.id);
     out.push(`---`,``,`## ${p.name}${p.archived?'（已归档）':''}`,``,`- 类别：${p.cat}`,`- 开始：${dkey(p.created)}`);
@@ -992,7 +1069,7 @@ function toMarkdown(){
       l.items.filter(i=>i.pid===p.id).forEach(i=>out.push(`- ${TYPES[i.type]}：${i.content}${i.minutes?` · ${i.minutes} 分钟`:''}${i.money?` · ${i.money} 元`:''}`));
       out.push(``);
       if(l.reply)out.push(`> ${nm}：${l.reply.replace(/\n/g,'\n> ')}`,``);
-      (l.thread||[]).forEach(m=>out.push(m.role==='user'?`> 我：${m.text}`:`> ${nm}：${m.text}`,`>`));
+      (l.thread||[]).filter(m=>!m.err).forEach(m=>out.push(m.role==='memo'?`> （${nm}记下了：${m.text.replace(/^记下了[：:]?/,'')}）`:m.role==='user'?`> 我：${m.text}`:`> ${nm}：${m.text}`,`>`));
       if((l.thread||[]).length)out.push(``);
     });
   });
@@ -1203,7 +1280,7 @@ function logCard(l){
   else if(l.reply)note=`<div class="note${l.reply.length<=40?' light':''}"><div class="who">${AN()}${l.exception?' · 只记录模式，看你今天挺累，多说了一句':''}</div><div class="txt">${esc(l.reply)}</div>${ratingRow(l.id,'reply')}</div>`;
   if(l.spendAlert&&l.status==='done')chips+=`<span class="chip block"><b>投入提示</b>${esc(l.spendAlert)}</span>`;
   let th='';
-  (l.thread||[]).forEach(m=>th+=m.role==='user'?`<div class="me">${esc(m.text)}</div>`:`<div class="note${m.err?' err':''}" style="margin-top:8px"><div class="txt">${esc(m.text)}</div></div>`);
+  (l.thread||[]).forEach(m=>th+=m.role==='memo'?`<div class="memo-line">✓ ${esc(m.text)}</div>`:m.role==='user'?`<div class="me">${esc(m.text)}</div>`:`<div class="note${m.err?' err':''}" style="margin-top:8px"><div class="txt">${esc(m.text)}</div></div>`);
   if(l.replying)th+=`<div class="note wait" style="margin-top:8px"><div class="txt">……</div></div>`;
   const rb=V.replyOpen===l.id?`<form class="replybox" data-reply="${l.id}"><input name="t" placeholder="回一句……" autocomplete="off" required><button>发送</button></form>`:'';
   const busy=['splitting','replying'].includes(l.status);
@@ -1316,6 +1393,9 @@ function viewSettings(){
   <div><label class="f">它怎么称呼你</label><input class="inp" id="s_nick" value="${esc(st.nick)}" placeholder="可不填" maxlength="10" data-setting="nick"></div></div>
   <label class="f">说话风格</label><div class="seg">${Object.entries(TONES).map(([k,v])=>`<button class="${(st.tone||'mid')===k?'on':''}" data-tone="${k}">${v.label}</button>`).join('')}</div>
   <p class="hint">温柔：不同看法说得很委婉；适中：可以温和地提不同看法；直接：看到问题直接指出。</p>
+  <label class="f">${AN()}记得的关于你（${(S.memory||[]).length}）</label>
+  ${(S.memory||[]).length?`<div class="memlist">${S.memory.map(m=>`<div class="memitem"><span>${esc(m.text)}</span><button data-memdel="${m.id}" aria-label="忘掉">忘掉</button></div>`).join('')}</div>`:`<p>你在聊天里说的偏好和背景，比如"回复短一点""我周末不碰工作"，${AN()}会记在这里，以后每次都用上。</p>`}
+  <form class="replybox" data-memadd="1"><input name="t" placeholder="直接告诉${AN()}一件要记住的事" autocomplete="off" maxlength="40"><button>记住</button></form>
   <label class="f">你给过的评价</label><p>好 ${good} 次 · 不好 ${bad} 次。最近 5 条"不好"的原因会带进每次回应，让它慢慢调整。</p>
   ${S.feedback.length?'<button class="ghost" data-act="clearfb">清空评价记录</button>':''}</div>
   <div class="card"><h3 style="font-size:15px;margin-bottom:4px">备份</h3><p>清理浏览器数据会把记录一起清掉。建议隔段时间导出一次。</p>
@@ -1416,6 +1496,7 @@ document.addEventListener('click',ev=>{
   if(d.edit){composeSheet(null,d.edit);return;}
   if(d.del){if(confirm('删除这条记录？它带来的磕绊变化也会撤回，相关项目的档案会重新整理。')){const l=L(d.del);
     if(l){const pids=logPids(l);removeLog(l);save();render();pids.forEach(pid=>rebuildProfile(pid,false));}}return;}
+  if(d.memdel){S.memory=S.memory.filter(m=>m.id!==d.memdel);save();render();toast('忘掉了');return;}
   if(d.delrev){if(!confirm('删除这篇复盘？自动生成不会再补写它。'))return;const r=S.reviews.find(x=>x.id===d.delrev);if(r){r.status='deleted';r.text='';r.seen=true;}save();render();return;}
   if(d.rvseen){const r=S.reviews.find(x=>x.id===d.rvseen);if(r){r.seen=true;save();render();}return;}
   if(d.rvk){V.rvk=d.rvk;V.rvMore=false;render();return;}
@@ -1487,8 +1568,9 @@ document.addEventListener('click',ev=>{
 $('#mask').addEventListener('click',ev=>{if(ev.target.id==='mask')closeSheet();});
 $('#fab').addEventListener('click',()=>composeSheet());
 document.addEventListener('submit',ev=>{const f=ev.target;
-  if(f.dataset.reply){ev.preventDefault();const t=f.t.value.trim();const l=L(f.dataset.reply);if(t&&l){V.replyOpen=null;followUp(l,t);}}
-  if(f.dataset.reasonform){ev.preventDefault();const r=rating(f.dataset.reasonform);if(r){r.reason=f.t.value.trim()||(r.v==='bad'?'没说':'');save();}V.reasonFor=null;render();toast('记下了，下次会注意');}
+  if(f.dataset.reply){ev.preventDefault();const t=f.querySelector('input').value.trim();const l=L(f.dataset.reply);if(t&&l){V.replyOpen=null;followUp(l,t);}}
+  if(f.dataset.memadd){ev.preventDefault();const t=f.querySelector('input').value.trim();if(t){S.memory.push({id:uid('m'),text:t.slice(0,40),ts:Date.now(),manual:true});save();render();toast('记住了');}return;}
+  if(f.dataset.reasonform){ev.preventDefault();const r=rating(f.dataset.reasonform);if(r){r.reason=f.querySelector('input').value.trim()||(r.v==='bad'?'没说':'');save();}V.reasonFor=null;render();toast('记下了，下次会注意');}
 });
 document.addEventListener('input',ev=>{const k=ev.target.dataset?.citem;if(k!==undefined&&cdraft)cdraft.items[+k].content=ev.target.value;});
 document.addEventListener('change',ev=>{
@@ -1506,10 +1588,12 @@ S.reviews.forEach(r=>{if(r.status==='pending'){r.status='error';r.text='上次�
 if(S.opener&&S.opener.status==='pending')S.opener=null;
 save();render();
 makeOpener(false);
+S.logs.filter(l=>(l.thread||[]).length>(l.digested||0)&&(l.thread||[]).slice(l.digested||0).some(m=>m.role==='user')&&!l.replying).slice(-5).forEach(l=>digestThread(l));
 checkReviews();
 setInterval(checkReviews,60*1000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkReviews();makeOpener(false);}});
 
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>
