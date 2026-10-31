@@ -290,6 +290,12 @@ textarea.inp{min-height:150px;resize:vertical;line-height:1.7;background:#fff re
 .phbig{width:100%;border-radius:12px;display:block}
 .phmiss{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:6px;font-size:13px;color:var(--warn)}
 .phmiss button{color:var(--pen);font-weight:600;font-size:13px}
+.seg button.dashed{border-style:dashed;color:var(--pen)}
+.cnew{display:flex;gap:6px;margin-top:8px}
+.cnew input{flex:1;min-width:0;border:1px solid var(--rule);border-radius:8px;padding:6px 10px;font-size:14px;background:var(--sheet)}
+.cnew button{font-size:13px;padding:6px 10px;border-radius:8px;color:var(--pen);font-weight:600}
+.cnew button[type=button]{color:var(--ink-3);font-weight:400}
+.primary.danger{background:var(--warn)}
 </style>
 </head>
 <body>
@@ -1536,15 +1542,21 @@ function renderConfirm(){
   document.querySelectorAll('[data-citem]').forEach(t=>{const it=cdraft.items[+t.dataset.citem];if(it)it.content=t.value;});
   const l=L(cdraft.id);const act=activeProjects();
   const n=cdraft.items.filter(i=>i.pid&&i.pid!=='drop').length,missing=cdraft.items.some(i=>!i.pid);
+  const allDrop=cdraft.items.length&&cdraft.items.every(i=>i.pid==='drop');
+  // 这次新建的项目名：AI 建议的 + 用户自己填的，每一条都可以选
+  const news=[...new Set([...(cdraft.newNames||[]),...cdraft.items.map(i=>i.suggest).filter(Boolean)])];
   $('#sheet').innerHTML=`<h3>确认一下<button data-act="close">稍后</button></h3>
   ${l.question?`<div class="note" style="margin:0 0 14px"><div class="who">${AN()}</div><div class="txt">${esc(l.question)}</div></div>`:''}
-  <p class="hint" style="margin:-4px 0 12px">文字可以直接改；点项目名换归属，点「不存」丢掉这一条。</p>
+  <p class="hint" style="margin:-4px 0 12px">文字可以直接改；点项目名换归属，没有合适的就「＋ 新建项目」；点「不存」丢掉这一段。</p>
   ${cdraft.items.map((i,k)=>`<div class="seg-card ${i.pid==='drop'?'drop':''}"><div class="why">${TYPES[i.type]}${i.minutes?` · ${i.minutes} 分钟`:''}${i.money?` · ${i.money} 元`:''}${i.resolves?' · 解决了：'+esc(B(i.resolves)?.content||''):''}${i.mentions?' · 又提到：'+esc(B(i.mentions)?.content||''):''}</div>
     <textarea data-citem="${k}">${esc(i.content)}</textarea>
-    <div class="seg">${act.map(p=>`<button class="${i.pid===p.id?'on':''}" data-cpick="${k}|${p.id}"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</button>`).join('')}${i.suggest?`<button class="auto ${i.pid==='new:'+i.suggest?'on':''}" data-cpick="${k}|new:${esc(i.suggest)}">＋ 新建「${esc(i.suggest)}」</button>`:''}<button class="${i.pid==='drop'?'on':''}" data-cpick="${k}|drop">不存</button></div></div>`).join('')}
+    <div class="seg">${act.map(p=>`<button class="${i.pid===p.id?'on':''}" data-cpick="${k}|${p.id}"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</button>`).join('')}${news.map(nm=>`<button class="auto ${i.pid==='new:'+nm?'on':''}" data-cpick="${k}|new:${esc(nm)}">＋ 新建「${esc(nm)}」</button>`).join('')}${cdraft.newFor===k?'':`<button class="dashed" data-cnew="${k}">＋ 新建项目</button>`}<button class="${i.pid==='drop'?'on':''}" data-cpick="${k}|drop">不存</button></div>
+    ${cdraft.newFor===k?`<form class="cnew" data-cnewform="${k}"><input placeholder="新项目叫什么" maxlength="20" autocomplete="off"><button>建好了</button><button type="button" data-cnewcancel="1">算了</button></form>`:''}</div>`).join('')}
   ${missing?`<p class="hint" style="color:var(--warn)">还有没选项目的条目。</p>`:''}
-  <button class="primary" data-act="confirmsave" ${missing||!n?'disabled':''}>确认，存 ${n} 条</button>
-  <button class="ghost" data-act="confirmedit">回去改原文</button>`;
+  ${allDrop?`<button class="primary danger" data-act="confirmdrop">这条整个不存了</button>`:`<button class="primary" data-act="confirmsave" ${missing||!n?'disabled':''}>确认，存 ${n} 条</button>`}
+  <button class="ghost" data-act="confirmedit">回去改原文</button>
+  ${allDrop?'':`<button class="ghost" style="color:var(--warn)" data-act="confirmdrop">整条都不存</button>`}`;
+  if(cdraft.newFor!==undefined&&cdraft.newFor!==null)setTimeout(()=>$('.cnew input')?.focus(),0);
 }
 async function saveConfirm(){
   document.querySelectorAll('[data-citem]').forEach(t=>{cdraft.items[+t.dataset.citem].content=t.value.trim();});
@@ -1600,6 +1612,8 @@ document.addEventListener('click',ev=>{
   if(d.rebuild){rebuildProfile(d.rebuild,true);return;}
   if(d.pfopen){V.pfOpen=V.pfOpen===d.pfopen?null:d.pfopen;render();return;}
   if(d.pick){draft.pid=d.pick;document.querySelectorAll('[data-pick]').forEach(b=>b.classList.toggle('on',b.dataset.pick===d.pick));return;}
+  if(d.cnew!==undefined){cdraft.newFor=+d.cnew;renderConfirm();return;}
+  if(d.cnewcancel){cdraft.newFor=null;renderConfirm();return;}
   if(d.cpick){const [k,pid]=d.cpick.split('|');cdraft.items[+k].pid=pid;renderConfirm();return;}
   if(d.confirm){openConfirm(d.confirm);return;}
   if(d.pcat){pdraft.cat=d.pcat;document.querySelectorAll('[data-pcat]').forEach(b=>b.classList.toggle('on',b.dataset.pcat===d.pcat));return;}
@@ -1657,6 +1671,9 @@ document.addEventListener('click',ev=>{
   if(act==='rvsettings'){rvSheet();return;}
   if(act==='dismissop'){S.opener.dismissed=true;save();render();fillCop();return;}
   if(act==='confirmsave'){saveConfirm();return;}
+  if(act==='confirmdrop'){const l=L(cdraft.id);if(!l)return;
+    if(!confirm('这条记录整个不存了？原文和照片都会删掉，删了就找不回来。'))return;
+    const pids=(l.rebuildPids||[]).filter(id=>P(id));removeLog(l);cdraft=null;closeSheet();save();render();toast('没存，已经丢掉了');pids.forEach(pid=>rebuildProfile(pid,false));return;}
   if(act==='confirmedit'){const l=L(cdraft.id);composeSheet(null,l.id);return;}
   if(act==='clearfb'){if(confirm('清空所有评价记录？')){S.feedback=[];save();render();}return;}
   if(act==='submit'){
@@ -1699,6 +1716,12 @@ $('#mask').addEventListener('click',ev=>{if(ev.target.id==='mask')closeSheet();}
 $('#fab').addEventListener('click',()=>composeSheet());
 document.addEventListener('submit',ev=>{const f=ev.target;
   if(f.dataset.reply){ev.preventDefault();const t=f.querySelector('input').value.trim();const l=L(f.dataset.reply);if(t&&l){V.replyOpen=null;followUp(l,t);}}
+  if(f.dataset.cnewform!==undefined){ev.preventDefault();const k=+f.dataset.cnewform;const nm=f.querySelector('input').value.trim().slice(0,20);
+    if(!nm){toast('给项目起个名字');return;}
+    const ex=activeProjects().find(p=>p.name===nm);
+    document.querySelectorAll('[data-citem]').forEach(t=>{const it=cdraft.items[+t.dataset.citem];if(it)it.content=t.value;});
+    cdraft.items[k].pid=ex?ex.id:'new:'+nm;if(!ex)cdraft.newNames=[...new Set([...(cdraft.newNames||[]),nm])];
+    cdraft.newFor=null;renderConfirm();if(ex)toast('已经有「'+nm+'」了，直接归进去');return;}
   if(f.dataset.memadd){ev.preventDefault();const t=f.querySelector('input').value.trim();if(t){S.memory.push({id:uid('m'),text:t.slice(0,40),ts:Date.now(),manual:true});save();render();toast('记住了');}return;}
   if(f.dataset.reasonform){ev.preventDefault();const r=rating(f.dataset.reasonform);if(r){r.reason=f.querySelector('input').value.trim()||(r.v==='bad'?'没说':'');save();}V.reasonFor=null;render();toast('记下了，下次会注意');}
 });
