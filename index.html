@@ -231,6 +231,42 @@ textarea.inp{min-height:150px;resize:vertical;line-height:1.7;background:#fff re
 .item.idea.project .it,.item.idea.drop .it{color:var(--ink-3)}
 .item.idea.drop .it{text-decoration:line-through}
 .fold{display:block;width:100%;text-align:center;font-size:13px;color:var(--ink-2);padding:10px 0;margin:4px 0 8px;border-top:1px dashed var(--rule)}
+.review .rt{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.review .rk{font-family:var(--sans);font-size:11px;font-weight:600;color:#fff;background:var(--pen);border-radius:4px;padding:0 5px;line-height:17px}
+.review.week .rk{background:var(--ink)}
+.review.month .rk{background:var(--gold)}
+.review .mini{font-size:12px;color:var(--pen)}
+.rvnew{margin-bottom:12px}
+.rvnew .who{font-size:11px;letter-spacing:2px;color:var(--pen);margin:0 2px 6px}
+.rvnew .review{border-color:var(--pen);box-shadow:0 0 0 3px var(--pen-soft)}
+.rvrow{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--rule)}
+.rvrow>div{flex:1}
+.rvrow b{display:block;font-size:15px}
+.rvrow small{font-size:12px;color:var(--ink-2)}
+.rvrow .tm{width:110px;padding:8px 10px}
+.rvrow .tm:disabled{opacity:.4}
+.sw{width:46px;height:28px;border-radius:999px;background:var(--rule);position:relative;flex:none;transition:background .15s}
+.sw i{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .15s}
+.sw.on{background:var(--pen)}
+.sw.on i{left:21px}
+.memo .mlabel{font-family:var(--sans);font-size:11px;letter-spacing:2px;display:block;color:var(--ink-3);margin-bottom:6px}
+.memo .mempty{color:var(--ink-3);font-style:normal}
+.memo .pold{color:var(--ink-2);font-size:14px;max-height:9.5em;overflow:hidden;-webkit-mask-image:linear-gradient(#000 60%,transparent)}
+.memo .mini{font-family:var(--sans);font-size:12px;color:var(--pen);margin-top:6px}
+.memo .mini.sub{color:var(--ink-2)}
+.memo.pyr{white-space:normal;font-family:var(--sans);color:var(--ink)}
+.pgoal{font-size:12px;color:var(--ink-2);margin-bottom:4px}
+.phl{font-family:var(--hand);font-size:19px;line-height:1.5;color:var(--pen);font-weight:700;margin-bottom:10px}
+.pills{display:grid;gap:6px;position:relative;padding-left:12px;border-left:2px solid var(--pen-soft)}
+.pill{display:grid;grid-template-columns:40px 1fr;column-gap:8px;align-items:baseline}
+.pill .ptitle{font-size:11px;letter-spacing:1px;color:var(--pen);font-weight:600}
+.pill .ppoint{font-size:14px;line-height:1.55}
+.pill.none .ppoint,.pill.none .ptitle{color:var(--ink-3)}
+.pill ul{grid-column:2;list-style:none;margin:4px 0 4px;padding:0}
+.pill li{font-size:12.5px;color:var(--ink);line-height:1.6;padding-left:10px;position:relative}
+.pill li::before{content:"";position:absolute;left:0;top:.7em;width:4px;height:1px;background:var(--ink-3)}
+.pill .fd{font-family:var(--mono);font-size:11px;color:var(--ink-2);margin-right:6px}
+.pact{display:flex;gap:16px;margin-top:6px}
 </style>
 </head>
 <body>
@@ -271,7 +307,7 @@ function load(){
   if(!d||!d.projects)return blank();
   return d.v===3?fixup(d):migrate(d);
 }
-function fixup(d){const b=blank();d.settings={...b.settings,...d.settings};['logs','blockers','reviews','feedback'].forEach(k=>d[k]=d[k]||[]);
+function fixup(d){const b=blank();(d.reviews||[]).forEach(r=>{if(!r.kind){r.kind='week';r.period=r.week||weekKey(r.ts);r.seen=true;}});d.settings={...b.settings,...d.settings};['logs','blockers','reviews','feedback'].forEach(k=>d[k]=d[k]||[]);
   d.projects.forEach(p=>{p.followUps=p.followUps||[];p.profiling=false;});return d;}
 function migrate(d){
   const n=blank();const os=d.settings||{};
@@ -291,11 +327,18 @@ function migrate(d){
     n.logs.push({id:e.id,ts:e.ts,raw:e.text,items,mood:moodMap[a.mood]||'neutral',mode:e.quiet?'log_only':'normal',forcePid:null,
       reply:a.reply||'',status:ok?'done':'error',stage:'split',err:ok?'':'旧版本里没完成的记录，点「重试」。',thread:e.thread||[]});
   });
-  n.reviews=(d.reviews||[]).filter(r=>r.status==='done').map(r=>({...r,week:weekKey(r.ts)}));
+  n.reviews=(d.reviews||[]).filter(r=>r.status==='done').map(r=>({...r,kind:'week',period:weekKey(r.ts),seen:true}));
   return n;
 }
 let S=load();
-function save(){localStorage.setItem(KEY,JSON.stringify(S));}
+let SAVE_WARNED=0;
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(S));}
+  catch(e){if(Date.now()-SAVE_WARNED>60e3){SAVE_WARNED=Date.now();
+    setTimeout(()=>alert('这次没能保存到本机（存储空间满了，或浏览器禁止了存储）。\n刚写的内容只在当前页面里，关掉就会丢。\n建议马上到「设置」里导出备份。'),0);}}
+}
+// 申请持久存储，减少浏览器自动清理数据的可能
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persisted().then(ok=>{if(!ok)navigator.storage.persist();}).catch(()=>{});}catch(e){}
 const P=id=>S.projects.find(p=>p.id===id);
 const B=id=>S.blockers.find(b=>b.id===id);
 const L=id=>S.logs.find(l=>l.id===id);
@@ -328,14 +371,22 @@ function attentionCount(){const today=dkey(Date.now());
   return S.blockers.filter(b=>!b.solved&&P(b.pid)&&!P(b.pid).archived&&daysAgo(b.first)>=3).length+activeProjects().reduce((n,p)=>n+p.followUps.filter(f=>!f.done&&f.due<=today).length,0);}
 
 /* ============ AI 基础 ============ */
-async function chat(messages,temperature=0.7){
+async function chat(messages,temperature=0.7,opt={}){
   const st=S.settings;
   if(!st.key)throw new Error('还没有填写 API Key，到「设置」里填一下就能收到回应。');
   const base=st.base.replace(/\/+$/,'');
   const url=/\/chat\/completions$/.test(base)?base:base+'/chat/completions';
   const body={model:st.model,messages,temperature};
   if(/deepseek\.com/.test(base))body.thinking={type:'disabled'};
-  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+st.key},body:JSON.stringify(body)});
+  // JSON 模式：让接口保证返回合法 JSON；个别模型不支持时自动退回普通模式
+  const useJson=opt.json&&!(st.noJsonMode||{})[st.model];
+  if(useJson)body.response_format={type:'json_object'};
+  const send=()=>fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+st.key},body:JSON.stringify(body)});
+  let r=await send();
+  if(!r.ok&&useJson&&r.status===400){
+    delete body.response_format;r=await send();
+    if(r.ok){st.noJsonMode={...(st.noJsonMode||{}),[st.model]:true};save();}
+  }
   if(!r.ok){let t='';try{t=(await r.json()).error?.message||'';}catch(e){}throw new Error('AI 接口返回 '+r.status+(t?'：'+t:'')+'。检查 Key、模型名和余额。');}
   const j=await r.json();return (j.choices?.[0]?.message?.content||'').trim();
 }
@@ -366,6 +417,11 @@ ${TONES[st.tone||'mid'].line}
 - 如果 TA 流露出伤害自己的念头，认真关心 TA，并建议 TA 联系身边信任的人或专业帮助。
 - 提到钱和时间时，只陈述事实，问一句是否在计划内，不评判 TA 的选择。`;
 }
+// 拆分、档案这类"只输出 JSON"的任务不带完整人设：只留名字和称呼，避免"口语聊天"和"只输出 JSON"互相打架，也省 token
+function personaLite(){
+  const st=S.settings;const nm=st.aiName||'小记';
+  return `你是"${nm}"，用户的项目伙伴，帮 TA 整理同时在推进的几个项目的记录。${st.nick?`你称呼用户为"${st.nick}"。`:''}`;
+}
 function profilesText(pids){return pids.map(id=>{const p=P(id);return p?`「${p.name}」（${p.desc||p.cat}）\n${p.profile||'（档案还是空的）'}`:'';}).filter(Boolean).join('\n\n')||'（无）';}
 function openBlockersText(pids){
   const bs=S.blockers.filter(b=>!b.solved&&(!pids||pids.includes(b.pid))&&P(b.pid));
@@ -383,7 +439,7 @@ async function aiSplit(l){
   const act=activeProjects();
   const projects=act.map(p=>({id:p.id,name:p.name,desc:p.desc||p.cat}));
   const open=S.blockers.filter(b=>!b.solved&&P(b.pid)&&!P(b.pid).archived).map(b=>({id:b.id,project_id:b.pid,content:b.content}));
-  const sys=persona()+`
+  const sys=personaLite()+`
 
 任务：把用户今天的一段记录拆成结构化条目。只输出 JSON，不要任何解释。
 
@@ -395,7 +451,7 @@ async function aiSplit(l){
 5. 如果用户说某个问题解决了，并且能对上未解决磕绊里的某一条，填 resolves_blocker_id。
 6. 如果用户又提到某个未解决磕绊、但没有解决（比如"还是报错""还没搞定"），填 mentions_blocker_id，这条的 type 用 blocker，代码会更新原磕绊，不会重复新建。
 7. 对不上任何项目的内容：像是新项目就填 new_project_suggestion，否则 project_id 填 null。
-8. 任何一处拿不准，needs_confirm 设为 true，并在 question 里用一句话问用户（口吻用你的人设）。
+8. 任何一处拿不准，needs_confirm 设为 true，并在 question 里用一句话问用户（像朋友随口一问，亲切、简短）。
 9. mood 判断整段话的情绪：good / neutral / low / very_low。${l.forcePid?`
 10. 用户已经指定这段记录属于项目 ${l.forcePid}，所有条目的 project_id 都填它，不要建议新项目，也不用为归属问题确认。`:''}
 
@@ -406,7 +462,7 @@ async function aiSplit(l){
 未解决磕绊：${JSON.stringify(open)}
 用户原文：${l.raw}${l.voiceEmotion&&l.voiceEmotion!=='neutral'?`
 （这段是语音转的文字，语音里听出的情绪是 ${l.voiceEmotion}，判断 mood 时可以参考，但以内容为准）`:''}`;
-  const out=parseJSON(await chat([{role:'system',content:sys},{role:'user',content:user}],0.2));
+  const out=parseJSON(await chat([{role:'system',content:sys},{role:'user',content:user}],0.2,{json:true}));
   const ids=new Set(act.map(p=>p.id)),openIds=new Set(open.map(b=>b.id));
   const num=v=>v===null||v===undefined||v===''||isNaN(+v)?null:+v;
   let items=(out.items||[]).filter(i=>i&&i.content).map(i=>{
@@ -436,13 +492,21 @@ async function commitLog(l){
   const made={};
   l.items.forEach(i=>{if(typeof i.pid==='string'&&i.pid.startsWith('new:')){const name=i.pid.slice(4);
     if(!made[name]){const p=newProject({name});made[name]=p.id;}i.pid=made[name];}});
-  l.items=l.items.filter(i=>i.pid&&P(i.pid));
-  if(!l.items.length){S.logs=S.logs.filter(x=>x.id!==l.id);save();render();toast('没有要存的内容');return;}
+  const kept=l.items.filter(i=>i.pid&&P(i.pid));
+  if(!kept.length){
+    // 对应的项目可能刚被删掉：保留原文，转成"待归类"，让用户重新选项目，不删除
+    l.items=[{id:uid('i'),pid:null,suggest:null,type:'note',content:l.raw.slice(0,200),minutes:null,money:null,resolves:null,mentions:null}];
+    l.forcePid=null;l.status='confirm';l.question='这条没找到对应的项目（可能刚被删了），原文先帮你留着，选一个项目吧。';
+    save();render();toast('原文留着了，等你选项目');return;
+  }
+  l.items=kept;
   applyBlockers(l);
   l.spendAlert=spendAlert(l);
   l.status='replying';l.stage='reply';save();render();
   await replyLog(l);
-  updateProfiles(logPids(l),l);
+  // 编辑过的记录：旧档案里还有改之前的内容，按全部记录重写；新记录：在旧档案上增量更新
+  if(l.rebuildPids){const all=[...new Set([...l.rebuildPids,...logPids(l)])];delete l.rebuildPids;save();all.forEach(pid=>rebuildProfile(pid,false));}
+  else updateProfiles(logPids(l),l);
 }
 function applyBlockers(l){
   l.items.forEach(i=>{
@@ -516,49 +580,160 @@ ${openBlockersText(pids)}
 }
 
 /* ============ 提示词③ 档案 ============ */
-async function updateProfiles(pids,l){
-  for(const pid of pids){
-    const p=P(pid);if(!p)continue;p.profiling=true;render();
-    const sys=persona()+`
+const PILLARS=[['progress','进展','做成了什么、走到了哪一步'],['block','卡点','卡在哪、反复出现的问题'],['rhythm','投入','怎么做、什么节奏']];
+function profileToText(pf){
+  if(!pf)return '';
+  const L=[];if(pf.goal)L.push('目标：'+pf.goal);L.push('结论：'+(pf.headline||''));
+  (pf.pillars||[]).forEach((x,i)=>{L.push(`${'一二三'[i]}、${x.title}：${x.point||'暂无'}`);(x.facts||[]).forEach(f=>L.push(`  - ${f.d?f.d.slice(5).replace('-','/')+' ':''}${f.t}`));});
+  return L.join('\n');
+}
+function normProfile(o){
+  const s=(v,n)=>String(v||'').trim().slice(0,n);
+  const byKey={};(Array.isArray(o.pillars)?o.pillars:[]).forEach(x=>{if(x&&x.key)byKey[x.key]=x;});
+  return {goal:s(o.goal,40),headline:s(o.headline,60),
+    pillars:PILLARS.map(([k,t])=>{const x=byKey[k]||{};return {key:k,title:t,point:s(x.point,40)||'暂无',
+      facts:(Array.isArray(x.facts)?x.facts:[]).filter(f=>f&&f.t).slice(0,3).map(f=>({d:/^\d{4}-\d\d-\d\d$/.test(f.d||'')?f.d:'',t:s(f.t,36)}))};})};
+}
+const PROFILE_RULES=`【档案用金字塔原理写：结论先行、以上统下、归类分组、逻辑递进】
+- goal：这个项目要达成什么，一句话，≤25 字。TA 没说过就留空。
+- headline：塔尖。一句话回答"这个项目现在怎么样"：当前阶段 + 最关键的一件事（最大进展或最大卡点，二选一）。≤40 字。
+- pillars：固定三根支柱，互不重叠，合起来完整支撑 headline：
+  · progress 进展：做成了什么、走到了哪一步；
+  · block 卡点：卡在哪、反复出现的问题；
+  · rhythm 投入：怎么做、在什么时间、什么频率（金额和总时长由代码统计，这里不写）。
+- 每根支柱：point 是这一面的结论，一句话 ≤25 字；facts 是支撑 point 的事实，最多 3 条，每条 ≤25 字，按时间倒序，有日期就写 d（YYYY-MM-DD），没有留空。
+- 某一面确实没有内容：point 写"暂无"，facts 为空，不要凑。
+
+【写法】
+- 只写 TA 说过的事实和你能从事实直接得出的判断；不推测动机，不写评价和形容词（"很努力""进展顺利"这类都不要）。
+- 短句、名词化，像档案卡片，不像作文。不写"用户""TA 表示"这类主语。
+- 用 TA 自己的叫法（项目里的专有名词、人名、机构名照抄）。
+- 旧档案里仍然成立的保留，过时的删掉，矛盾的以新记录为准；facts 满了，新的挤掉最不重要的旧的。
+- 全部加起来不超过 250 字。`;
+const PROFILE_FORMAT=`{"profile":{"goal":"……","headline":"……","pillars":[{"key":"progress","point":"……","facts":[{"d":"YYYY-MM-DD","t":"……"}]},{"key":"block","point":"……","facts":[]},{"key":"rhythm","point":"……","facts":[]}]},"follow_ups":[{"content":"……","due_date":"YYYY-MM-DD"}]}`;
+const FU_RULE=`- 另外输出 follow_ups：TA 说过"下周要……""打算……"的事，以及值得过几天问一句的事。每条一句话；due_date 按 TA 说的时间推算（"明天"→明天，"周末"→本周六，"下周"→下周一）；说"过几天"或没说时间的，填今天之后第 3 天；已经做完或过时的不要再列。最多 5 条。follow_ups 不要写进档案里。
+- 现有的待回访里仍然成立的，content 原样照抄，不要改写措辞。
+- "已完成或不用再问"列表里的事，不要再列进 follow_ups。`;
+// 待回访文字的相似度（字符二元组），用来判断 AI 新列出的是不是同一件事
+function fuNorm(s){return String(s||'').replace(/[\s，。、！？,.!?"“”'‘’：:；;（）()]/g,'').toLowerCase();}
+function fuSim(a,b){a=fuNorm(a);b=fuNorm(b);if(!a||!b)return 0;if(a===b)return 1;if(a.includes(b)||b.includes(a))return 0.9;
+  const g=s=>{const m=new Map();for(let i=0;i<s.length-1;i++){const k=s.slice(i,i+2);m.set(k,(m.get(k)||0)+1);}return m;};
+  const A=g(a),B2=g(b);let n=0;A.forEach((v,k)=>{n+=Math.min(v,B2.get(k)||0);});return 2*n/Math.max(1,(a.length-1)+(b.length-1));}
+function fuClosedText(p){const c=p.followUps.filter(f=>f.done).slice(-10);return c.length?JSON.stringify(c.map(f=>f.content)):'（无）';}
+function applyProfile(p,out){
+  if(out.profile&&typeof out.profile==='object'){p.pf=normProfile(out.profile);p.profile=profileToText(p.pf);p.profileTs=Date.now();}
+  else if(typeof out.profile==='string'&&out.profile.trim()){p.profile=out.profile.slice(0,700);p.pf=null;p.profileTs=Date.now();}
+  if(Array.isArray(out.follow_ups)){
+    const closed=p.followUps.filter(f=>f.done).slice(-10);
+    const open=p.followUps.filter(f=>!f.done);const used=new Set();
+    const next=[];
+    out.follow_ups.filter(f=>f&&f.content).slice(0,5).forEach(f=>{
+      const content=String(f.content);
+      // 已完成 / 不用了的事，AI 又列回来就丢掉
+      if(closed.some(c=>fuSim(c.content,content)>=0.7))return;
+      // 和现有待回访是同一件事：沿用旧 id 和创建时间，开场卡片上的按钮才找得到它
+      let best=null,bs=0;open.forEach(o=>{if(used.has(o.id))return;const s=fuSim(o.content,content);if(s>bs){bs=s;best=o;}});
+      const due=/^\d{4}-\d\d-\d\d$/.test(f.due_date||'')?f.due_date:dkey(Date.now()+3*DAY);
+      if(best&&bs>=0.6){used.add(best.id);next.push({...best,content,due});}
+      else next.push({id:uid('f'),content,due,done:false,created:Date.now()});
+    });
+    // 今天开场卡片正在问的那件事，即使 AI 这次没列，也先留着，免得按钮失效
+    const op=S.opener;
+    if(op&&op.kind==='follow_up'&&op.day===dkey(Date.now())&&!op.dismissed&&!next.some(f=>f.id===op.ref)){
+      const keep=open.find(o=>o.id===op.ref);if(keep)next.push(keep);
+    }
+    p.followUps=[...closed,...next];
+  }
+}
+// 档案更新按项目排队：同一个项目上一次没更新完，下一次等它结束再开始，避免互相覆盖
+const PQ={};
+function queueProfile(pid,job){
+  const run=()=>job().catch(err=>console.warn('档案更新失败',err));
+  PQ[pid]=(PQ[pid]||Promise.resolve()).then(run);
+  return PQ[pid];
+}
+function updateProfiles(pids,l){
+  return Promise.all(pids.map(pid=>queueProfile(pid,()=>updateOneProfile(pid,l))));
+}
+async function updateOneProfile(pid,l){
+  {
+    const p=P(pid);if(!p||!L(l.id))return;p.profiling=true;render();
+    const sys=personaLite()+`
 
 任务：根据今天的新记录，更新这个项目的档案。只输出 JSON。
 
-【档案固定分为六段，每段 1～3 句，每段以编号和小标题开头，段与段之间换行】
-1. 这是什么：项目是什么，TA 想达到什么（TA 说过才写）。
-2. 现在走到哪：当前阶段，最近一次实质进展。
-3. 一路的关键节点：最多 5 条，按时间排列，带日期，新的节点挤掉最不重要的旧节点。
-4. TA 的投入方式：习惯在什么时候做、大致频率（金额总数由代码统计，这里不写数字）。
-5. 反复出现的模式：反复卡的地方、反复冒出的念头。没有就写"暂无"。
-6. 值得回访：TA 说过"下周要……""打算……"的事，以及值得过几天问一句的事。
-
-【规则】
-- 旧档案里仍然成立的保留，过时的删掉，矛盾的以今天为准。
-- 只写 TA 说过的，不推测动机、不给评价。
-- 档案全文不超过 400 字。
-- 另外把第 6 段整理成 follow_ups 列表：每条一句话，due_date 按 TA 说的时间推算（"明天"→明天，"周末"→本周六，"下周"→下周一）；说"过几天"或没说时间的，填今天之后第 3 天；已经做完或过时的不要再列。最多 5 条。
+${PROFILE_RULES}
+${FU_RULE}
 
 【输出格式】
-{"profile":"1. 这是什么：……\\n2. 现在走到哪：……\\n……","follow_ups":[{"content":"……","due_date":"YYYY-MM-DD"}]}`;
+${PROFILE_FORMAT}`;
     const user=`今天：${dkey(Date.now())}（周${WEEK[new Date().getDay()]}）
 项目：${p.name}，${p.desc||p.cat}
-旧档案：${p.profile||'（空，这是第一次）'}
+旧档案：
+${p.profile||'（空，这是第一次）'}
 今天的条目：${JSON.stringify(l.items.filter(i=>i.pid===pid).map(i=>({type:i.type,content:i.content,time_minutes:i.minutes,money_yuan:i.money})))}
 今天原文：${l.raw}
 未解决磕绊：
 ${openBlockersText([pid])}
-现有的待回访：${JSON.stringify(p.followUps.filter(f=>!f.done).map(f=>({content:f.content,due_date:f.due})))}`;
-    try{
-      const out=parseJSON(await chat([{role:'system',content:sys},{role:'user',content:user}],0.3));
-      if(out.profile){p.profile=String(out.profile).slice(0,700);p.profileTs=Date.now();}
-      if(Array.isArray(out.follow_ups)){
-        const done=p.followUps.filter(f=>f.done).slice(-10);
-        p.followUps=[...done,...out.follow_ups.filter(f=>f&&f.content).slice(0,5).map(f=>({id:uid('f'),content:String(f.content),
-          due:/^\d{4}-\d\d-\d\d$/.test(f.due_date||'')?f.due_date:dkey(Date.now()+3*DAY),done:false,created:Date.now()}))];
-      }
-      p.profileErr='';
-    }catch(err){p.profileErr=err.message||String(err);}
+现有的待回访：${JSON.stringify(p.followUps.filter(f=>!f.done).map(f=>({content:f.content,due_date:f.due})))}
+已完成或不用再问：${fuClosedText(p)}`;
+    try{applyProfile(p,parseJSON(await chat([{role:'system',content:sys},{role:'user',content:user}],0.3,{json:true})));p.profileErr='';}
+    catch(err){p.profileErr=err.message||String(err);}
     p.profiling=false;save();render();
   }
+}
+function rebuildProfile(pid,manual){
+  const p=P(pid);if(!p||!S.settings.key)return Promise.resolve();
+  if(manual&&p.profiling){toast('正在整理，稍等');return PQ[pid];}
+  return queueProfile(pid,()=>rebuildOneProfile(pid,manual));
+}
+async function rebuildOneProfile(pid,manual){
+  const p=P(pid);if(!p)return;
+  const ls=S.logs.filter(l=>l.status==='done'&&logPids(l).includes(pid)).sort((a,b)=>b.ts-a.ts).slice(0,20).reverse();
+  if(!ls.length){
+    if(manual){toast('这个项目还没有记录');return;}
+    // 记录都删光了：档案也清空，免得留着已删除的内容
+    p.profile='';p.pf=null;p.profileTs=0;p.followUps=p.followUps.filter(f=>f.done);save();render();return;
+  }
+  p.profiling=true;render();
+  const sys=personaLite()+`
+
+任务：根据这个项目的全部近期记录，重新整理一份档案（不是在旧档案上修改，而是重写成新格式）。只输出 JSON。
+
+${PROFILE_RULES}
+${FU_RULE}
+
+【输出格式】
+${PROFILE_FORMAT}`;
+  const user=`今天：${dkey(Date.now())}（周${WEEK[new Date().getDay()]}）
+项目：${p.name}，${p.desc||p.cat}，始于 ${dkey(p.created)}
+旧档案（仅供参考，格式不要沿用）：
+${p.profile||'（无）'}
+近期记录（按时间顺序）：
+${ls.map(l=>`- ${dkey(l.ts)}｜${l.raw.slice(0,200)}｜整理出的条目：${l.items.filter(i=>i.pid===pid).map(i=>TYPES[i.type]+'：'+i.content).join('；')}`).join('\n')}
+未解决磕绊：
+${openBlockersText([pid])}
+已解决的磕绊：
+${S.blockers.filter(b=>b.pid===pid&&b.solved).map(b=>`- ${b.content}（${dkey(b.first)} → ${dkey(b.solvedTs||b.last)}）`).join('\n')||'（无）'}
+现有的待回访：${JSON.stringify(p.followUps.filter(f=>!f.done).map(f=>({content:f.content,due_date:f.due})))}
+已完成或不用再问：${fuClosedText(p)}`;
+  try{applyProfile(p,parseJSON(await chat([{role:'system',content:sys},{role:'user',content:user}],0.3,{json:true})));p.profileErr='';if(manual)toast('档案已重新整理');}
+  catch(err){p.profileErr=err.message||String(err);}
+  p.profiling=false;save();render();
+}
+function profileHTML(p){
+  const head=`<span class="mlabel">${AN()}的档案${p.profileTs?' · '+dkey(p.profileTs)+' 更新':''}${p.profiling?' · 正在整理…':''}</span>`;
+  const err=p.profileErr?`<div class="hint" style="color:var(--warn)">上次档案没更新成功：${esc(p.profileErr)}</div>`:'';
+  if(!p.pf){
+    if(!p.profile)return `<div class="memo">${head}<em class="mempty">写几笔之后，这里会有一份关于这个项目的档案。</em>${err}</div>`;
+    return `<div class="memo">${head}<div class="pold">${esc(p.profile)}</div>${p.profiling?'':`<button class="mini" data-rebuild="${p.id}">按新格式重新整理</button>`}${err}</div>`;
+  }
+  const pf=p.pf;const open=V.pfOpen===p.id;
+  return `<div class="memo pyr">${head}
+    ${pf.goal?`<div class="pgoal">目标 · ${esc(pf.goal)}</div>`:''}
+    <div class="phl">${esc(pf.headline||'')}</div>
+    <div class="pills">${pf.pillars.map(x=>`<div class="pill ${x.point==='暂无'?'none':''}"><div class="ptitle">${x.title}</div><div class="ppoint">${esc(x.point)}</div>${open&&x.facts.length?`<ul>${x.facts.map(f=>`<li>${f.d?`<span class="fd">${f.d.slice(5).replace('-','/')}</span>`:''}${esc(f.t)}</li>`).join('')}</ul>`:''}</div>`).join('')}</div>
+    <div class="pact">${pf.pillars.some(x=>x.facts.length)?`<button class="mini" data-pfopen="${p.id}">${open?'收起依据':'看依据'}</button>`:''}${p.profiling?'':`<button class="mini sub" data-rebuild="${p.id}">重新整理</button>`}</div>${err}</div>`;
 }
 
 /* ============ 提示词④ 开场关心 ============ */
@@ -610,19 +785,73 @@ ${profilesText([...new Set(c.map(x=>x.pid))])}`;
   save();render();
 }
 
-/* ============ 周报 ============ */
-async function weeklyReview(auto){
-  const now=Date.now(),from=weekStart(now),prevFrom=from-7*DAY,wk=weekKey(now);
-  const es=S.logs.filter(l=>l.ts>=from&&l.status==='done').sort((a,b)=>a.ts-b.ts);
-  if(!es.length){if(!auto)toast('这周还没有记录');return;}
-  S.reviews=S.reviews.filter(r=>r.week!==wk);
-  const rv={id:uid('r'),ts:now,week:wk,text:'',status:'pending'};S.reviews.unshift(rv);save();render();
-  const stats=activeProjects().map(p=>{const a=sumRange(p.id,from,now+1),b=sumRange(p.id,prevFrom,from);const n=es.filter(l=>logPids(l).includes(p.id)).length;
-    return `- 「${p.name}」本周 ${n} 条记录，时间 ${fmtMin(a.min)}（上周 ${fmtMin(b.min)}），花费 ${Math.round(a.money)} 元（上周 ${Math.round(b.money)} 元）`;}).join('\n');
-  const ideas=es.flatMap(l=>l.items.filter(i=>i.type==='idea').map(i=>`- 「${P(i.pid)?.name}」${i.content}`)).join('\n');
-  const sys=persona()+`
+/* ============ 复盘（日 / 周 / 月） ============ */
+const RV_KINDS=['month','week','day'];
+const RV_NAME={day:'今日复盘',week:'本周复盘',month:'本月复盘'};
+const RV_DEF={day:{on:true,t:'22:30'},week:{on:true,t:'21:00'},month:{on:true,t:'22:00'}};
+function rvCfg(k){const c=(S.settings.rv||{})[k]||{};return {...RV_DEF[k],...c};}
+function periodOf(kind,t){const d=new Date(t);
+  if(kind==='day')return dkey(d);
+  if(kind==='week')return weekKey(d);
+  return d.getFullYear()+'-'+pad(d.getMonth()+1);}
+function periodRange(kind,period){
+  if(kind==='day'){const [y,m,d]=period.split('-').map(Number);const f=new Date(y,m-1,d).getTime();return [f,new Date(y,m-1,d+1).getTime()];}
+  if(kind==='week'){const [y,m,d]=period.split('-').map(Number);const f=new Date(y,m-1,d).getTime();return [f,new Date(y,m-1,d+7).getTime()];}
+  const [y,m]=period.split('-').map(Number);return [new Date(y,m-1,1).getTime(),new Date(y,m,1).getTime()];}
+function prevPeriod(kind,period){const [f]=periodRange(kind,period);
+  if(kind==='month'){const d=new Date(f);return periodOf('month',new Date(d.getFullYear(),d.getMonth()-1,1));}
+  return periodOf(kind,f-(kind==='day'?1:7)*DAY+3600e3*3);}
+function dueTime(kind,period){const [f,to]=periodRange(kind,period);const [hh,mm]=rvCfg(kind).t.split(':').map(Number);
+  const last=new Date(to-DAY/2);return new Date(last.getFullYear(),last.getMonth(),last.getDate(),hh||0,mm||0).getTime();}
+function periodLabel(kind,period){
+  if(kind==='day'){const n=daysAgo(period);const d=new Date(period);return (n===0?'今天':n===1?'昨天':(d.getMonth()+1)+'月'+d.getDate()+'日')+' · 周'+WEEK[d.getDay()];}
+  if(kind==='week'){const [f,to]=periodRange(kind,period);const a=new Date(f),b=new Date(to-DAY);return `${a.getMonth()+1}.${a.getDate()} – ${b.getMonth()+1}.${b.getDate()}`;}
+  const [y,m]=period.split('-');return `${y}年${+m}月`;}
+const rvFind=(kind,period)=>S.reviews.find(r=>r.kind===kind&&r.period===period);
+function logsIn(from,to){return S.logs.filter(l=>l.ts>=from&&l.ts<to&&l.status==='done').sort((a,b)=>a.ts-b.ts);}
+function rvStats(from,to,pf,pt){
+  return activeProjects().map(p=>{const a=sumRange(p.id,from,to),n=logsIn(from,to).filter(l=>logPids(l).includes(p.id)).length;
+    let s=`- 「${p.name}」${n} 条记录，时间 ${fmtMin(a.min)}，花费 ${Math.round(a.money)} 元`;
+    if(pf!==undefined){const b=sumRange(p.id,pf,pt),m=logsIn(pf,pt).filter(l=>logPids(l).includes(p.id)).length;s+=`（上期 ${m} 条，${fmtMin(b.min)}，${Math.round(b.money)} 元）`;}
+    return s;}).join('\n');}
+function rvBlockers(from,to){
+  const nw=S.blockers.filter(b=>b.first>=from&&b.first<to&&P(b.pid)),sv=S.blockers.filter(b=>b.solved&&b.solvedTs>=from&&b.solvedTs<to&&P(b.pid));
+  return `新出现的磕绊（${nw.length}）：\n${nw.map(b=>`- 「${P(b.pid).name}」${b.content}${b.solved?'（已解决）':''}`).join('\n')||'（无）'}\n这期解决的磕绊（${sv.length}）：\n${sv.map(b=>`- 「${P(b.pid).name}」${b.content}（卡了 ${Math.max(1,Math.round((b.solvedTs-b.first)/DAY))} 天）`).join('\n')||'（无）'}\n目前仍未解决：\n${openBlockersText(null)}`;}
+function rvItems(ls,type){return ls.flatMap(l=>l.items.filter(i=>i.type===type&&P(i.pid)).map(i=>`- 「${P(i.pid).name}」${i.content}`)).join('\n')||'（无）';}
+let RV_BUSY=false;
+async function generateReview(kind,period,manual){
+  const [from,to]=periodRange(kind,period);const ls=logsIn(from,to);
+  if(!ls.length){if(manual)toast('这段时间还没有记录');return false;}
+  const old=rvFind(kind,period);
+  if(old&&old.status==='pending'){if(manual)toast('正在写，稍等一下');return false;}
+  const rv={id:old?.id||uid('r'),kind,period,ts:Date.now(),text:'',status:'pending',logCount:ls.length,seen:false};
+  S.reviews=S.reviews.filter(r=>r!==old);S.reviews.unshift(rv);save();render();
+  const recLines=ls.map(l=>`- ${kind==='day'?hm(l.ts):dkey(l.ts)}｜${logPids(l).map(id=>P(id).name).join('、')}｜情绪 ${l.mood}｜${l.raw.slice(0,kind==='month'?100:160)}`).join('\n');
+  let task,user;
+  if(kind==='day'){
+    task=`任务：现在是晚上，给用户写今天的复盘，像睡前朋友陪 TA 回看一下今天。
 
-任务：给用户写这一周的复盘，像朋友帮 TA 回顾，不是绩效考核。
+【怎么写】
+- 写成 2～4 句话的一小段，不超过 150 字，不用标题和列表。
+- 不用面面俱到：挑今天最值得说的一件事（一个进展、一个解决掉的磕绊、或一个收获），说具体。
+- 今天新卡住的事，轻轻提一句就好，不给方案。
+- 今天情绪低（low / very_low）：只陪伴，告诉 TA 今天已经够了，不提进度。
+- 结尾可以是一句晚安，或者一个关于明天的很轻的问题，二选一。
+- 数字只用输入里给的。`;
+    const pv=prevPeriod('day',period);const [pf,pt]=periodRange('day',pv);
+    user=`日期：${period} 周${WEEK[new Date(period).getDay()]}
+今天的记录：
+${recLines}
+今天各项目投入：
+${rvStats(from,to)}
+${rvBlockers(from,to)}
+今天的收获：
+${rvItems(ls,'gain')}
+今天的灵感：
+${rvItems(ls,'idea')}
+昨天写了 ${logsIn(pf,pt).length} 条。`;
+  }else if(kind==='week'){
+    task=`任务：给用户写这一周的复盘，像朋友帮 TA 回顾，不是绩效考核。
 
 【结构，写成连贯的几段话，不用标题】
 1. 一句话总结这一周。
@@ -634,27 +863,74 @@ async function weeklyReview(auto){
 
 【规则】
 - 全文不超过 400 字。
-- 数字只用输入里给的，不自己计算。${feedbackText()}`;
-  const user=`本周（${wk} 起）记录：
-${es.map(l=>`- ${dkey(l.ts)}｜${logPids(l).map(id=>P(id).name).join('、')}｜${l.raw.slice(0,160)}`).join('\n')}
+- 数字只用输入里给的，不自己计算。`;
+    const [pf,pt]=periodRange('week',prevPeriod('week',period));
+    user=`本周（${periodLabel('week',period)}）记录：
+${recLines}
 各项目档案：
 ${profilesText(activeProjects().map(p=>p.id))}
-投入统计：
-${stats}
-未解决磕绊：
-${openBlockersText(null)}
+投入统计（括号里是上周）：
+${rvStats(from,to,pf,pt)}
+${rvBlockers(from,to)}
+本周收获：
+${rvItems(ls,'gain')}
 本周灵感：
-${ideas||'（无）'}`;
-  try{rv.text=await chat([{role:'system',content:sys},{role:'user',content:user}],0.7);rv.status='done';}
+${rvItems(ls,'idea')}`;
+  }else{
+    task=`任务：给用户写这个月的复盘。一个月是能看出"变化"的长度：重点是这个月和月初比，TA 走到了哪里。像老朋友帮 TA 翻完一整个月的本子，不是月度报告。
+
+【结构，写成连贯的几段话，不用标题和列表】
+1. 一句话说这个月给你的整体感觉。
+2. 每个活跃项目 1～2 句：这个月从哪走到了哪（参考档案里的关键节点），投入多少，和上月比多了还是少了。
+3. 这个月解决掉的磕绊，挑最难的一个点出来；拖了一整月还没解决的，问一句要不要换个办法，或者干脆放下。
+4. 挑一两条这个月的收获，让 TA 看见自己学到了什么。
+5. 这个月冷落的项目，一句带过，可以给个台阶。
+6. 如果灵感里有反复出现的念头，提一句。
+7. 以一个关于下个月的问题结尾：最想把力气放在哪里。
+
+【规则】
+- 全文不超过 600 字。
+- 数字只用输入里给的，不自己计算。`;
+    const [pf,pt]=periodRange('month',prevPeriod('month',period));
+    user=`本月（${periodLabel('month',period)}）共 ${ls.length} 条记录，写了 ${new Set(ls.map(l=>dkey(l.ts))).size} 天：
+${recLines}
+各项目档案：
+${profilesText(activeProjects().map(p=>p.id))}
+投入统计（括号里是上月）：
+${rvStats(from,to,pf,pt)}
+${rvBlockers(from,to)}
+本月收获：
+${rvItems(ls,'gain')}
+本月灵感：
+${rvItems(ls,'idea')}`;
+  }
+  try{rv.text=await chat([{role:'system',content:persona()+'\n\n'+task+feedbackText()},{role:'user',content:user}],0.7);rv.status='done';}
   catch(err){rv.status='error';rv.text=err.message;}
   save();render();
+  if(rv.status==='done'&&!manual)toast(`${AN()}写好了${periodLabel(kind,period).split(' ·')[0]}的${kind==='day'?'复盘':kind==='week'?'周复盘':'月复盘'}`);
+  return rv.status==='done';
 }
-function maybeAutoReview(){
-  const d=new Date();if(d.getDay()!==0||d.getHours()<18||!S.settings.key)return;
-  if(S.reviews.some(r=>r.week===weekKey(Date.now())&&r.status!=='error'))return;
-  weeklyReview(true);
+async function checkReviews(){
+  if(RV_BUSY||!S.settings.key)return;
+  if(S.logs.some(l=>['splitting','replying'].includes(l.status)))return;
+  RV_BUSY=true;
+  try{
+    const now=Date.now();
+    if(!S.settings.rvSince){S.settings.rvSince=now;save();}
+    for(const kind of RV_KINDS){
+      if(!rvCfg(kind).on)continue;
+      const cur=periodOf(kind,now);const pers=[cur];for(let i=0;i<(kind==='day'?2:1);i++)pers.unshift(prevPeriod(kind,pers[0]));
+      for(const per of pers){
+        if(dueTime(kind,per)>now||dueTime(kind,per)<S.settings.rvSince)continue;
+        const r=rvFind(kind,per);if(r&&r.status!=='error')continue;
+        if(r&&r.status==='error'&&r.auto)continue;
+        const [f,t]=periodRange(kind,per);if(!logsIn(f,t).length)continue;
+        const ok=await generateReview(kind,per,false);
+        const nr=rvFind(kind,per);if(nr&&!ok)nr.auto=true;save();
+      }
+    }
+  }finally{RV_BUSY=false;}
 }
-
 /* ============ 接着聊 ============ */
 async function followUp(l,text){
   const pids=logPids(l);
@@ -698,7 +974,9 @@ function toMarkdown(){
     out.push(`---`,``,`## ${p.name}${p.archived?'（已归档）':''}`,``,`- 类别：${p.cat}`,`- 开始：${dkey(p.created)}`);
     if(p.desc)out.push(`- 描述：${p.desc}`);
     out.push(`- 累计：${st.count} 条记录 · ${fmtMin(st.min)} · ${fmtMoney(st.money)}`,``);
-    if(p.profile)out.push(`### ${nm}的档案`,``,p.profile,``);
+    if(p.pf){const pf=p.pf;out.push(`### ${nm}的档案`,``);if(pf.goal)out.push(`**目标：** ${pf.goal}`,``);out.push(`**${pf.headline}**`,``);
+      pf.pillars.forEach(x=>{out.push(`- **${x.title}：** ${x.point}`);x.facts.forEach(f=>out.push(`  - ${f.d?f.d+' ':''}${f.t}`));});out.push(``);}
+    else if(p.profile)out.push(`### ${nm}的档案`,``,p.profile,``);
     const gs=allGains().filter(g=>g.pid===p.id);
     if(gs.length){out.push(`### 收获`,``);gs.forEach(g=>out.push(`- ${g.text}（${dkey(g.ts)}）`));out.push(``);}
     const bs=S.blockers.filter(b=>b.pid===p.id);
@@ -718,8 +996,8 @@ function toMarkdown(){
       if((l.thread||[]).length)out.push(``);
     });
   });
-  const rs=S.reviews.filter(r=>r.status==='done');
-  if(rs.length){out.push(`---`,``,`## 每周复盘`,``);rs.forEach(r=>out.push(`### ${r.week||dkey(r.ts)} 这一周`,``,r.text,``));}
+  [['month','每月复盘'],['week','每周复盘'],['day','每日复盘']].forEach(([k,n])=>{const rs=S.reviews.filter(r=>r.kind===k&&r.status==='done').sort((a,b)=>a.period<b.period?1:-1);
+    if(rs.length){out.push(`---`,``,`## ${n}`,``);rs.forEach(r=>out.push(`### ${periodLabel(k,r.period)}`,``,r.text,``));}});
   return out.join('\n');
 }
 
@@ -876,6 +1154,7 @@ function viewHome(){
   const wrote=S.logs.some(l=>daysAgo(l.ts)===0);
   let h=header('项目手记',`${greet()}${S.settings.nick?'，'+esc(S.settings.nick):''}。在做的项目有 ${act.length} 个${wrote?'。':'，今天还没写。'}`);
   if(!S.settings.key)h+=`<div class="nudge"><div class="hand">还没接上 AI。到「设置」里填一下 API Key，${AN()}才能回你。</div><button data-nav="settings">去设置</button></div>`;
+  S.reviews.filter(r=>r.status==='done'&&!r.seen).sort((a,b)=>b.ts-a.ts).slice(0,2).forEach(r=>h+=`<div class="rvnew"><div class="who">${AN()}写好了${{day:'今天的复盘',week:'这周的复盘',month:'这个月的复盘'}[r.kind]}</div>${reviewCard(r,false)}</div>`);
   h+=openerCard();
   const pend=S.logs.filter(l=>l.status==='confirm');
   pend.forEach(l=>h+=`<div class="nudge"><div class="hand">有一条记录等你确认：${esc(l.question||'有几段不确定归到哪个项目')}</div><button data-confirm="${l.id}">去确认</button></div>`);
@@ -883,12 +1162,18 @@ function viewHome(){
   const ls=S.logs.filter(l=>V.filter==='all'||logPids(l).includes(V.filter)||(l.forcePid===V.filter&&!l.items.length)).sort((a,b)=>b.ts-a.ts);
   if(!ls.length)h+=`<div class="empty"><span class="hand">这里还空着</span>点右下角「写一笔」，几个项目混着写也行。</div>`;
   h+=timeline(ls.slice(0,60));
-  h+=`<div class="sec"><h2>每周复盘</h2><button data-act="review">生成本周复盘</button></div>`;
-  h+=S.reviews.slice(0,3).map(reviewCard).join('')||`<p class="sub">周日 18 点后第一次打开时，${AN()}会自动帮你回顾这一周。</p>`;
+  const rk=V.rvk||'day';const rs=S.reviews.filter(r=>r.kind===rk&&r.status!=='deleted').sort((a,b)=>a.period<b.period?1:-1);
+  const curP=periodOf(rk,Date.now());
+  h+=`<div class="sec"><h2>复盘</h2><button data-act="rvsettings">时间设置</button></div>
+  <div class="tabs" style="margin-bottom:10px">${['day','week','month'].map(k=>`<button class="tab ${rk===k?'on':''}" data-rvk="${k}">${{day:'每日',week:'每周',month:'每月'}[k]}</button>`).join('')}</div>`;
+  h+=rs.slice(0,V.rvMore?30:3).map(r=>reviewCard(r,true)).join('')||`<p class="sub">${rvCfg(rk).on?`${{day:'每天',week:'每周日',month:'每月最后一天'}[rk]} ${rvCfg(rk).t}，${AN()}会自动写${rk==='day'?'当天':rk==='week'?'这一周':'这个月'}的复盘。那时没打开的话，下次打开时补上。`:'自动生成已关闭，可以在「时间设置」里打开。'}</p>`;
+  if(rs.length>3)h+=`<button class="fold" data-act="rvmore">${V.rvMore?'收起':'看更早的 '+(rs.length-3)+' 篇'}</button>`;
+  if(!rvFind(rk,curP)||rvFind(rk,curP).status==='error')h+=`<button class="ghost" data-rvnow="${rk}">现在就写${rk==='day'?'今天':rk==='week'?'这周':'这个月'}的复盘</button>`;
   return h;
 }
-function reviewCard(r){
-  return `<div class="review"><div class="rt">${r.week||dkey(r.ts)} 这一周</div><div class="txt" style="${r.status==='error'?'color:var(--warn);font-family:var(--sans);font-size:13px':''}">${r.status==='pending'?'正在翻你这一周的本子……':esc(r.text)}</div>${r.status==='done'?ratingRow(r.id,'review'):''}${r.status!=='pending'?`<div class="eacts"><button data-delrev="${r.id}">删除</button></div>`:''}</div>`;
+function reviewCard(r,inList){
+  const [f,t]=periodRange(r.kind,r.period);const more=r.status==='done'?logsIn(f,t).length-(r.logCount||0):0;
+  return `<div class="review ${r.kind}"><div class="rt"><span class="rk">${{day:'日',week:'周',month:'月'}[r.kind]}</span>${periodLabel(r.kind,r.period)}${more>0?` · <span style="color:var(--warn)">之后又写了 ${more} 条</span> <button class="mini" data-rvregen="${r.kind}|${r.period}">重写</button>`:''}</div><div class="txt" style="${r.status==='error'?'color:var(--warn);font-family:var(--sans);font-size:13px':''}">${r.status==='pending'?`正在翻你${r.kind==='day'?'今天':r.kind==='week'?'这一周':'这个月'}的本子……`:esc(r.text)}</div>${r.status==='done'?ratingRow(r.id,'review'):''}${!inList&&r.kind!=='day'&&r.status==='done'&&Date.now()-(S.settings.lastExport||0)>7*DAY?`<div class="hint" style="margin-top:8px">数据只存在这台设备的浏览器里，${S.settings.lastExport?'上次备份是 '+daysAgo(S.settings.lastExport)+' 天前':'还没备份过'}。<button class="mini" data-act="export">现在备份</button></div>`:''}${r.status!=='pending'?`<div class="eacts">${!inList&&!r.seen?`<button style="color:var(--pen)" data-rvseen="${r.id}">看过了</button>`:''}${r.status==='error'?`<button style="color:var(--pen)" data-rvregen="${r.kind}|${r.period}">重试</button>`:''}<button data-delrev="${r.id}">删除</button></div>`:''}</div>`;
 }
 function timeline(ls){let h='',last='';ls.forEach(l=>{const k=dkey(l.ts);if(k!==last){h+=`<div class="day">${dayLabel(k)}</div>`;last=k;}h+=logCard(l);});return h;}
 
@@ -950,7 +1235,7 @@ function viewProject(){
   let h=`<button class="back" data-nav="projects">← 全部项目</button>`;
   h+=`<div class="phead" style="--c:${p.color}"><div class="cat" style="font-size:12px;color:var(--ink-3)">${esc(p.cat)} · 始于 ${dkey(p.created)}${p.archived?' · 已归档':''}</div><h2>${esc(p.name)}</h2>${p.desc?`<div class="goal">${esc(p.desc)}</div>`:''}
   <div class="stats"><div class="stat"><div class="n">${st.count}</div><div class="l">条记录</div></div><div class="stat"><div class="n">${fmtMin(st.min)}</div><div class="l">投入时间</div></div><div class="stat"><div class="n">${fmtMoney(st.money)}</div><div class="l">投入金钱</div></div></div>
-  <div class="memo"><span>${AN()}的档案${p.profileTs?' · '+dkey(p.profileTs)+' 更新':''}${p.profiling?' · 正在更新…':''}</span>${p.profile?esc(p.profile):'<em style="color:var(--ink-3);font-style:normal">写几笔之后，这里会有一份关于这个项目的档案。</em>'}${p.profileErr?`<div class="hint" style="color:var(--warn)">上次档案没更新成功：${esc(p.profileErr)}</div>`:''}</div>
+  ${profileHTML(p)}
   <div class="prow"><button data-act="compose:${p.id}">写一笔</button><button data-editproj="${p.id}">编辑项目</button><button data-arch="${p.id}">${p.archived?'恢复':'归档'}</button></div></div>`;
   if(fu.length)h+=`<div class="sec"><h2>说过要做的（${fu.length}）</h2></div>`+fu.map(fuItem).join('');
   if(open.length)h+=`<div class="sec"><h2>还没解决（${open.length}）</h2></div>`+open.map(blockItem).join('');
@@ -1081,6 +1366,12 @@ async function saveConfirm(){
   closeSheet();cdraft=null;
   await commitLog(l);
 }
+function rvSheet(){
+  openSheet(`<h3>复盘时间<button data-act="close">完成</button></h3>
+  <p class="hint" style="margin-bottom:6px">到点时如果项目手记开着，会马上写；没开着，下次打开时补上。当天 / 当周 / 当月一条记录都没有，就不写。</p>
+  ${[['day','每日复盘','每天'],['week','每周复盘','每周日'],['month','每月复盘','每月最后一天']].map(([k,n,w])=>{const c=rvCfg(k);return `<div class="rvrow"><div><b>${n}</b><small>${w}</small></div><input type="time" class="inp tm" value="${c.t}" data-rvtime="${k}" ${c.on?'':'disabled'}><button class="sw ${c.on?'on':''}" data-rvon="${k}" aria-label="开关"><i></i></button></div>`;}).join('')}
+  <p class="hint">每篇复盘大约多调用一次 AI。</p>`);
+}
 let pdraft={};
 function newProject({name,desc='',cat='其他',color}){const p={id:uid('p'),name,desc,cat,color:color||COLORS[S.projects.length%COLORS.length],created:Date.now(),archived:false,profile:'',profileTs:0,followUps:[],lastAsked:0,spendAlerted:''};S.projects.push(p);return p;}
 function projSheet(editId,name){
@@ -1110,7 +1401,9 @@ document.addEventListener('click',ev=>{
   if(d.istar){const i=findItem(d.istar);if(i){i.ideaState=i.ideaState==='star'?'new':'star';save();render();toast(i.ideaState==='star'?'留着了':'取消留着');}return;}
   if(d.idrop){const i=findItem(d.idrop);if(i){i.ideaState='drop';save();render();toast('放下了，想要可以再捡回来');}return;}
   if(d.ireset){const i=findItem(d.ireset);if(i){i.ideaState='new';i.toPid=null;save();render();}return;}
-  if(d.open){V.tab='project';V.pid=d.open;render();scrollTo(0,0);return;}
+  if(d.open){V.tab='project';V.pid=d.open;render();scrollTo(0,0);const p=P(d.open);if(p&&p.profile&&!p.pf&&!p.profiling&&S.settings.key)rebuildProfile(p.id,false);return;}
+  if(d.rebuild){rebuildProfile(d.rebuild,true);return;}
+  if(d.pfopen){V.pfOpen=V.pfOpen===d.pfopen?null:d.pfopen;render();return;}
   if(d.pick){draft.pid=d.pick;document.querySelectorAll('[data-pick]').forEach(b=>b.classList.toggle('on',b.dataset.pick===d.pick));return;}
   if(d.cpick){const [k,pid]=d.cpick.split('|');cdraft.items[+k].pid=pid;renderConfirm();return;}
   if(d.confirm){openConfirm(d.confirm);return;}
@@ -1121,15 +1414,24 @@ document.addEventListener('click',ev=>{
   if(d.retry){const l=L(d.retry);if(!l)return;if(l.stage==='reply'&&l.items.length){l.status='replying';render();replyLog(l).then(()=>updateProfiles(logPids(l),l));}else runLog(l);return;}
   if(d.askai){const l=L(d.askai);if(l){l.mode='normal';l.status='replying';render();replyLog(l);}return;}
   if(d.edit){composeSheet(null,d.edit);return;}
-  if(d.del){if(confirm('删除这条记录？它带来的磕绊变化也会撤回。')){const l=L(d.del);if(l)removeLog(l);save();render();}return;}
-  if(d.delrev){S.reviews=S.reviews.filter(r=>r.id!==d.delrev);save();render();return;}
+  if(d.del){if(confirm('删除这条记录？它带来的磕绊变化也会撤回，相关项目的档案会重新整理。')){const l=L(d.del);
+    if(l){const pids=logPids(l);removeLog(l);save();render();pids.forEach(pid=>rebuildProfile(pid,false));}}return;}
+  if(d.delrev){if(!confirm('删除这篇复盘？自动生成不会再补写它。'))return;const r=S.reviews.find(x=>x.id===d.delrev);if(r){r.status='deleted';r.text='';r.seen=true;}save();render();return;}
+  if(d.rvseen){const r=S.reviews.find(x=>x.id===d.rvseen);if(r){r.seen=true;save();render();}return;}
+  if(d.rvk){V.rvk=d.rvk;V.rvMore=false;render();return;}
+  if(d.rvnow){generateReview(d.rvnow,periodOf(d.rvnow,Date.now()),true);return;}
+  if(d.rvregen){const [k,per]=d.rvregen.split('|');generateReview(k,per,true);return;}
+  if(d.rvon){const k=d.rvon;S.settings.rv=S.settings.rv||{};S.settings.rv[k]={...rvCfg(k),on:!rvCfg(k).on};save();rvSheet();render();return;}
   if(d.rate){const [ref,kind,v]=d.rate.split('|');const src=kind==='reply'?L(ref)?.reply:kind==='opener'?S.opener?.text:S.reviews.find(r=>r.id===ref)?.text;
     setRating(ref,kind,src||'',v);V.reasonFor=rating(ref)?ref:null;render();return;}
   if(d.reason){const [ref,r]=d.reason.split('|');const f=rating(ref);if(f){f.reason=r;save();}V.reasonFor=null;render();toast('记下了，下次会注意');return;}
   if(d.toggle){const b=B(d.toggle);if(b){b.solved=!b.solved;b.solvedTs=b.solved?Date.now():null;b.solvedBy=null;save();render();toast(b.solved?'又解决一个':'已改回未解决');}return;}
   if(d.solveop){const b=B(d.solveop);if(b){b.solved=true;b.solvedTs=Date.now();S.opener.dismissed=true;save();render();toast('太好了，又解决一个');}return;}
-  if(d.fudone||d.fudrop){const id=d.fudone||d.fudrop;S.projects.forEach(p=>{const f=p.followUps.find(x=>x.id===id);if(f){if(d.fudone)f.done=true;else p.followUps=p.followUps.filter(x=>x.id!==id);}});
-    if(S.opener&&S.opener.ref===id)S.opener.dismissed=true;save();render();toast(d.fudone?'好，记下了':'不再问这件事');return;}
+  if(d.fudone||d.fudrop){const id=d.fudone||d.fudrop;let hit=false;
+    // "不用了"也标成已完成（并记一笔 dropped），这样档案更新时 AI 知道别再列回来
+    S.projects.forEach(p=>{const f=p.followUps.find(x=>x.id===id);if(f){hit=true;f.done=true;f.doneTs=Date.now();if(d.fudrop)f.dropped=true;}});
+    if(S.opener&&S.opener.ref===id)S.opener.dismissed=true;save();render();
+    toast(!hit?'这件事已经被更新过了，到「清单」里看看':d.fudone?'好，记下了':'不再问这件事');return;}
   if(d.idea2proj){const i=findItem(d.idea2proj);if(i){projSheet(null,i.content.slice(0,20));pdraft.fromIdea=i.id;$('#pdesc').value=i.content;}return;}
   if(d.editproj){projSheet(d.editproj);return;}
   if(d.arch){const p=P(d.arch);p.archived=!p.archived;save();render();toast(p.archived?'已归档':'已恢复');return;}
@@ -1149,7 +1451,8 @@ document.addEventListener('click',ev=>{
   if(act==='compose'){composeSheet();return;}
   if(act.startsWith('compose:')){composeSheet(act.slice(8));return;}
   if(act==='newproj'){projSheet();return;}
-  if(act==='review'){weeklyReview(false);return;}
+  if(act==='rvmore'){V.rvMore=!V.rvMore;render();return;}
+  if(act==='rvsettings'){rvSheet();return;}
   if(act==='dismissop'){S.opener.dismissed=true;save();render();return;}
   if(act==='confirmsave'){saveConfirm();return;}
   if(act==='confirmedit'){const l=L(cdraft.id);composeSheet(null,l.id);return;}
@@ -1159,7 +1462,7 @@ document.addEventListener('click',ev=>{
     const raw=$('#ctext').value.trim();if(!raw){toast('先写点什么');return;}
     const mode=$('#cquiet').checked?'log_only':'normal';const forcePid=draft.pid==='auto'?null:draft.pid;
     let l=draft.editId?L(draft.editId):null;
-    if(l){undoLog(l);Object.assign(l,{raw,mode,forcePid,items:[],reply:'',thread:[],exception:false});S.feedback=S.feedback.filter(f=>f.ref!==l.id);}
+    if(l){const oldPids=[...new Set([...(l.rebuildPids||[]),...logPids(l)])];undoLog(l);Object.assign(l,{raw,mode,forcePid,items:[],reply:'',thread:[],exception:false,rebuildPids:oldPids});S.feedback=S.feedback.filter(f=>f.ref!==l.id);}
     else{l={id:uid('e'),ts:Date.now(),raw,mode,forcePid,items:[],mood:'neutral',reply:'',status:'splitting',thread:[],voiceEmotion:draft.voiceEmotion||''};S.logs.push(l);}
     save();closeSheet();if(V.tab!=='project')V.tab='home';scrollTo(0,0);runLog(l);return;
   }
@@ -1177,7 +1480,7 @@ document.addEventListener('click',ev=>{
     toast('测试中…');chat([{role:'user',content:'用一句话（20字内）跟我打个招呼'}]).then(r=>alert('连接成功：\n'+r)).catch(e=>alert(e.message));return;
   }
   if(act==='exportmd'){download(toMarkdown(),'项目手记-'+dkey(Date.now())+'.md','text/markdown');return;}
-  if(act==='export'){download(JSON.stringify({...S,settings:{...S.settings,key:'',asrKey:''}},null,1),'项目手记备份-'+dkey(Date.now())+'.json','application/json');return;}
+  if(act==='export'){S.settings.lastExport=Date.now();save();render();download(JSON.stringify({...S,settings:{...S.settings,key:'',asrKey:''}},null,1),'项目手记备份-'+dkey(Date.now())+'.json','application/json');return;}
   if(act==='import'){$('#impfile').click();return;}
   if(act==='wipe'){if(confirm('清空全部项目和记录？此操作不能撤销。')&&confirm('再确认一次：真的清空？')){const st=S.settings;S=blank();S.settings=st;save();render();}return;}
 });
@@ -1193,6 +1496,7 @@ document.addEventListener('change',ev=>{
     const key=S.settings.key;S=d.v===3?fixup(d):migrate(d);if(!S.settings.key)S.settings.key=key;save();render();toast('已恢复 '+S.logs.length+' 条记录');}).catch(()=>alert('这个文件不是项目手记的备份。'));}
   const k=ev.target.dataset?.setting;if(k){S.settings[k]=ev.target.value.trim()||(k==='aiName'?'小记':'');save();render();}
   const c=ev.target.dataset?.check;if(c){S.settings[c]=ev.target.checked;save();}
+  const rt=ev.target.dataset?.rvtime;if(rt&&/^\d\d:\d\d$/.test(ev.target.value)){S.settings.rv=S.settings.rv||{};S.settings.rv[rt]={...rvCfg(rt),t:ev.target.value};save();render();toast('已改为 '+ev.target.value);}
 });
 document.addEventListener('keydown',ev=>{if(ev.key==='Escape')closeSheet();if((ev.metaKey||ev.ctrlKey)&&ev.key==='Enter'&&$('#ctext')&&$('#mask').classList.contains('show'))document.querySelector('[data-act="submit"]')?.click();});
 
@@ -1202,9 +1506,10 @@ S.reviews.forEach(r=>{if(r.status==='pending'){r.status='error';r.text='上次�
 if(S.opener&&S.opener.status==='pending')S.opener=null;
 save();render();
 makeOpener(false);
-maybeAutoReview();
+checkReviews();
+setInterval(checkReviews,60*1000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){checkReviews();makeOpener(false);}});
 
 </script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>
