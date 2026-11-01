@@ -21,7 +21,7 @@ html,body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-
 button,input,textarea,select{font:inherit;color:inherit}
 button{cursor:pointer;border:none;background:none}
 :focus-visible{outline:2px solid var(--pen);outline-offset:2px;border-radius:6px}
-.app{max-width:560px;margin:0 auto;min-height:100vh;padding:0 16px calc(96px + env(safe-area-inset-bottom))}
+.app{max-width:560px;margin:0 auto;min-height:100vh;padding:0 16px calc(150px + env(safe-area-inset-bottom))}
 
 /* header */
 .top{padding:22px 2px 10px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
@@ -313,6 +313,59 @@ textarea.inp{min-height:150px;resize:vertical;line-height:1.7;background:#fff re
 .cnew button[type=button]{color:var(--ink-3);font-weight:400}
 .primary.danger{background:var(--warn)}
 /* ===== v3.14：手记目录 / 复盘独立 ===== */
+/* v3.17：关联分享 + AI 内容默认折叠 */
+.fbar{display:flex;align-items:center;gap:7px;width:100%;margin-top:10px;padding:6px 0 2px;font-size:12px;color:var(--ink-3);text-align:left;border-top:1px dashed var(--rule)}
+.fbar span:first-of-type{flex:1}
+.fbar .fcar{flex:none;font-size:11px;transition:transform .2s}
+.fbar.open .fcar,.fline.open .fcar,.pfhead[aria-expanded="true"] .fcar,.khead[aria-expanded="true"] .fcar{transform:rotate(180deg)}
+.fbar.wait{border-top:1px dashed var(--rule)}
+.fbar .spin,.fline .spin{width:11px;height:11px;border-width:1.5px}
+.flink{color:var(--pen);font-size:12px}
+.fdot{width:7px;height:7px;border-radius:50%;background:var(--warn);flex:none;display:inline-block}
+.fx{animation:fxin .24s ease-out;overflow:hidden}
+@keyframes fxin{from{max-height:0;opacity:0}to{max-height:1600px;opacity:1}}
+.fbody .chips{margin-top:8px}
+.entry.flash{animation:flash 1.6s ease-out}
+@keyframes flash{0%,40%{box-shadow:0 0 0 2px var(--pen)}100%{box-shadow:0 0 0 0 transparent}}
+.fline{display:flex;align-items:center;gap:8px;width:100%;background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:8px 12px;margin:0 0 10px;font-size:13px;color:var(--ink-2);text-align:left}
+.fline span:first-of-type{flex:1}
+.fline .fcar{font-size:11px;color:var(--ink-3);transition:transform .2s}
+.fline.wait{color:var(--ink-3)}
+.fline.open{margin-bottom:6px;border-color:transparent;background:transparent;padding-left:2px}
+.rvpeek{background:var(--sheet);border:1px solid var(--rule);border-radius:12px;padding:4px 14px 12px;margin-bottom:12px}
+.rvpeek .rvbody{margin:10px 0 8px;font-size:16px}
+.rvpeek .acts{display:flex;gap:16px;font-size:13px}.rvpeek .acts button{color:var(--pen)}.rvpeek .acts .sub2{color:var(--ink-3)}
+.share{margin-top:12px;padding:10px 12px;background:var(--paper);border-radius:10px;font-size:14px}
+.share.k-link_self{box-shadow:inset 3px 0 0 var(--gold)}
+.share.k-blocker_tip{box-shadow:inset 3px 0 0 var(--warn)}
+.share.k-knowledge{box-shadow:inset 3px 0 0 var(--pen)}
+.shh{display:flex;align-items:baseline;gap:8px;font-size:12px;margin-bottom:4px}
+.shh b{color:var(--pen);font-weight:600;letter-spacing:1px}.shh span{color:var(--ink-3)}.shh i{font-style:normal;color:var(--gold);margin-left:auto}
+.shtxt{line-height:1.75;color:var(--ink);white-space:pre-wrap}
+.lowc{display:block;font-size:11px;color:var(--warn);margin-top:2px}
+.shrefs{display:grid;gap:4px;margin-top:8px}
+.shrefs button{display:flex;gap:6px;align-items:baseline;text-align:left;font-size:12px;color:var(--ink-2);background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:5px 8px;min-width:0}
+.shrefs button span{font-family:var(--mono);color:var(--ink-3);flex:none}
+.shrefs button em{font-style:normal;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+.shkw{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}
+.shkw button{font-size:12px;padding:2px 9px;border-radius:999px;border:1px solid var(--rule);background:var(--sheet);color:var(--pen)}
+.shkw span{font-size:11px;color:var(--ink-3)}
+.shacts{display:flex;flex-wrap:wrap;gap:14px;margin-top:8px;font-size:12px}
+.shacts button{color:var(--ink-2)}.shacts button.sub{color:var(--ink-3);margin-left:auto}
+.share .rate{margin-top:8px}
+.kcard{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;margin-bottom:8px;overflow:hidden}
+.kcard.star{border-color:var(--gold)}
+.khead{display:grid;grid-template-columns:auto 1fr auto;column-gap:8px;align-items:center;width:100%;padding:10px 12px;text-align:left}
+.khead .fdot{grid-row:1/3}
+.khead .kt{grid-column:2;font-size:15px;color:var(--ink);font-weight:600}
+.khead .kst{color:var(--gold);margin-right:4px}
+.khead .from{grid-column:2;font-size:12px;color:var(--ink-3);display:flex;align-items:center;gap:5px}
+.khead .fcar{grid-column:3;grid-row:1/3;font-size:11px;color:var(--ink-3);transition:transform .2s}
+.kcard .share{margin:0 10px 10px}
+.pfhead{display:flex;align-items:flex-start;gap:8px;width:100%;text-align:left;padding:0}
+.pfhead .phl{flex:1;margin-bottom:6px}
+.pfhead .fcar{font-size:12px;color:var(--ink-3);margin-top:6px;transition:transform .2s}
+.pfam{font-size:11px;color:var(--ink-3);margin-top:8px;font-family:var(--sans)}
 /* v3.16：类别改为工作/爱好/学习/副业/家庭/休闲，首页按类别筛选 */
 /* v3.15：写一笔精简——输入框置顶，项目选择收起 */
 nav .in{grid-template-columns:repeat(5,1fr)}
@@ -408,7 +461,7 @@ const CATS=['工作','爱好','学习','副业','家庭','休闲'];
 const CAT_MAP={'生活':'家庭'};
 // 正在用的类别：按固定顺序，旧数据里不在六类中的也保留显示
 function catsInUse(ps){const have=[...new Set(ps.map(p=>p.cat))];return [...CATS.filter(c=>have.includes(c)),...have.filter(c=>c&&!CATS.includes(c))];}
-const TYPES={progress:'进展',gain:'收获',cost:'付出',blocker:'磕绊',idea:'灵感',note:'其他'};
+const TYPES={progress:'进展',gain:'收获',cost:'付出',blocker:'磕绊',idea:'灵感',note:'碎碎念'};
 const MOODS={good:'不错',neutral:'平稳',low:'有点低落',very_low:'很低落'};
 const TONES={
   soft:{label:'温柔',line:'- 可以好奇、可以开玩笑；有不同看法时说得很委婉，先肯定再提。不说教、不催促、不评判。'},
@@ -427,14 +480,17 @@ const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const DAY=864e5;
 
 /* ============ 数据层 ============ */
-function blank(){return {v:3,projects:[],logs:[],blockers:[],reviews:[],feedback:[],memory:[],deleted:{},opener:null,
-  settings:{preset:'deepseek',base:PRESETS.deepseek.base,model:PRESETS.deepseek.model,key:'',aiName:'小记',nick:'',tone:'mid'}};}
+function blank(){return {v:3,projects:[],logs:[],blockers:[],reviews:[],feedback:[],memory:[],shares:[],deleted:{},opener:null,
+  settings:{preset:'deepseek',base:PRESETS.deepseek.base,model:PRESETS.deepseek.model,key:'',aiName:'小记',nick:'',tone:'mid',shareMode:'sometimes',shareMuted:[],autoOpen:false}};}
 function load(){
   let d=null;try{d=JSON.parse(localStorage.getItem(KEY));}catch(e){}
   if(!d||!d.projects)return blank();
   return d.v===3?fixup(d):migrate(d);
 }
-function fixup(d){const b=blank();(d.reviews||[]).forEach(r=>{if(!r.kind){r.kind='week';r.period=r.week||weekKey(r.ts);r.seen=true;}});d.settings={...b.settings,...d.settings};['logs','blockers','reviews','feedback','memory'].forEach(k=>d[k]=d[k]||[]);d.deleted=d.deleted||{};
+function fixup(d){const b=blank();(d.reviews||[]).forEach(r=>{if(!r.kind){r.kind='week';r.period=r.week||weekKey(r.ts);r.seen=true;}});d.settings={...b.settings,...d.settings};['logs','blockers','reviews','feedback','memory','shares'].forEach(k=>d[k]=d[k]||[]);d.deleted=d.deleted||{};
+  if(!['always','sometimes','off'].includes(d.settings.shareMode))d.settings.shareMode='sometimes';if(!Array.isArray(d.settings.shareMuted))d.settings.shareMuted=[];
+  d.logs.forEach(l=>{if(l.replySeen===undefined)l.replySeen=true;});
+  d.shares.forEach(s=>{s.thread=s.thread||[];s.keywords=s.keywords||[];s.refLogIds=s.refLogIds||[];s.state=s.state||'new';if(s.seen===undefined)s.seen=true;s.confidence=s.confidence||'medium';});
   d.projects.forEach(p=>{p.followUps=p.followUps||[];p.profiling=false;if(CAT_MAP[p.cat])p.cat=CAT_MAP[p.cat];if(!CATS.includes(p.cat))p.cat=guessCat(p.name+' '+(p.desc||''));});return d;}
 function migrate(d){
   const n=blank();const os=d.settings||{};
@@ -563,11 +619,18 @@ function openBlockersText(pids){
   return bs.map(b=>`- [${b.id}] 「${P(b.pid).name}」${b.content}（已持续 ${daysAgo(b.first)} 天，最近一次提到是 ${daysAgo(b.last)} 天前）`).join('\n')||'（无）';
 }
 function feedbackText(){
-  const fb=[...S.feedback].sort((a,b)=>b.ts-a.ts);
+  const fb=S.feedback.filter(f=>f.kind!=='share').sort((a,b)=>b.ts-a.ts);
   const bad=fb.filter(f=>f.v==='bad').slice(0,5),mid=fb.filter(f=>f.v==='mid'&&f.reason).slice(0,3),good=fb.filter(f=>f.v==='good'&&f.reason).slice(0,3);
   if(!bad.length&&!good.length&&!mid.length)return '';
   const tag=f=>f.kind==='review'?'（复盘）':'';
   return '\n【TA 对你过去回应的评价，请据此调整】\n'+[...bad.map(f=>`- 不喜欢${tag(f)}：「${f.text.slice(0,50)}」原因：${f.reason||'没说'}`),...mid.map(f=>`- 觉得一般${tag(f)}：「${f.text.slice(0,50)}」原因：${f.reason}`),...good.map(f=>`- 喜欢${tag(f)}：「${f.text.slice(0,50)}」原因：${f.reason}`)].join('\n');
+}
+
+function shareFeedbackText(){
+  const fb=S.feedback.filter(f=>f.kind==='share').sort((a,b)=>b.ts-a.ts);
+  const bad=fb.filter(f=>f.v==='bad').slice(0,5),good=fb.filter(f=>f.v==='good').slice(0,3);
+  if(!bad.length&&!good.length)return '';
+  return '\n【TA 对你过去分享的评价，请据此调整】\n'+[...bad.map(f=>`- 觉得没用：「${f.text.slice(0,50)}」原因：${f.reason||'没说'}`),...good.map(f=>`- 觉得有用：「${f.text.slice(0,50)}」${f.reason?'原因：'+f.reason:''}`)].join('\n');
 }
 
 /* ============ 提示词① 拆分 ============ */
@@ -581,18 +644,19 @@ async function aiSplit(l){
 
 【规则】
 1. 一段话可能涉及多个项目，按项目拆开。一个项目也可以拆成多条。
-2. 每条的 type 只能是：progress 进展 / gain 收获 / cost 付出 / blocker 磕绊 / idea 灵感 / note 其他
+2. 每条的 type 只能是：progress 进展 / gain 收获 / cost 付出 / blocker 磕绊 / idea 灵感 / note 碎碎念（日常琐事、生活流水，以上都不像时用）
 3. content 用一句话复述用户原意，保留关键细节和数字，不润色、不添加。
 4. 时间和金钱只在用户明确说出时填写（照片里清楚印着的金额，比如小票、订单截图上的实付金额，也算明确）："两个半小时"→150，"花了380"→380；"一下午""挺贵的"这类不确定的填 null。时间和金钱可以填在对应的那条上，不必单独拆一条 cost。
 5. 如果用户说某个问题解决了，并且能对上未解决磕绊里的某一条，填 resolves_blocker_id。
 6. 如果用户又提到某个未解决磕绊、但没有解决（比如"还是报错""还没搞定"），填 mentions_blocker_id，这条的 type 用 blocker，代码会更新原磕绊，不会重复新建。
 7. 对不上任何项目的内容：像是新项目就填 new_project_suggestion，否则 project_id 填 null。
 8. 任何一处拿不准，needs_confirm 设为 true，并在 question 里用一句话问用户（像朋友随口一问，亲切、简短）。
-9. mood 判断整段话的情绪：good / neutral / low / very_low。${l.forcePid?`
-10. 用户已经指定这段记录属于项目 ${l.forcePid}，所有条目的 project_id 都填它，不要建议新项目，也不用为归属问题确认。`:''}
+9. mood 判断整段话的情绪：good / neutral / low / very_low。
+10. knowledge_hook：如果这段记录里有具体的概念、工具、术语、技术问题或方法，值得朋友顺口分享一点相关的知识或经验，就填 {"topic":"一句话说是什么","kind_hint":"link_self / blocker_tip / knowledge"}；只是记账、情绪、日常琐事、过于笼统的内容，填 null。整段话最多一个。${l.forcePid?`
+11. 用户已经指定这段记录属于项目 ${l.forcePid}，所有条目的 project_id 都填它，不要建议新项目，也不用为归属问题确认。`:''}
 
 【输出格式】
-{"items":[{"project_id":"p1或null","new_project_suggestion":"名称或null","type":"progress","content":"……","time_minutes":数字或null,"money_yuan":数字或null,"resolves_blocker_id":"id或null","mentions_blocker_id":"id或null"}],"mood":"neutral","needs_confirm":false,"question":null}`;
+{"items":[{"project_id":"p1或null","new_project_suggestion":"名称或null","type":"progress","content":"……","time_minutes":数字或null,"money_yuan":数字或null,"resolves_blocker_id":"id或null","mentions_blocker_id":"id或null"}],"mood":"neutral","needs_confirm":false,"question":null,"knowledge_hook":{"topic":"……","kind_hint":"knowledge"}或null}`;
   const user=`今天：${dkey(l.ts)}（周${WEEK[new Date(l.ts).getDay()]}）
 项目列表：${JSON.stringify(projects)}
 未解决磕绊：${JSON.stringify(open)}
@@ -609,7 +673,9 @@ async function aiSplit(l){
     return {id:uid('i'),pid,suggest:sug,type:TYPES[i.type]?i.type:'note',content:String(i.content),minutes:num(i.time_minutes),money:num(i.money_yuan),resolves:res,mentions:men};
   });
   if(!items.length)items=[{id:uid('i'),pid:l.forcePid||null,suggest:null,type:'note',content:rawOf(l).slice(0,80),minutes:null,money:null,resolves:null,mentions:null}];
-  return {items,mood:MOODS[out.mood]?out.mood:'neutral',needsConfirm:!!out.needs_confirm,question:out.question||''};
+  const hk=out.knowledge_hook;let hook=null;
+  if(hk&&typeof hk==='object'&&String(hk.topic||'').trim())hook={topic:String(hk.topic).trim().slice(0,40),kind_hint:SHARE_KINDS[hk.kind_hint]?hk.kind_hint:'knowledge'};
+  return {items,mood:MOODS[out.mood]?out.mood:'neutral',needsConfirm:!!out.needs_confirm,question:out.question||'',hook};
 }
 
 /* ============ 一条记录的流程 ============ */
@@ -621,7 +687,7 @@ async function runLog(l){
       try{await describePhotos(l);l.photoErr='';}catch(e){l.photoErr=e.message;}
       l.looking=false;save();render();}
     const r=await aiSplit(l);
-    Object.assign(l,{items:r.items,mood:r.mood,question:r.question});
+    Object.assign(l,{items:r.items,mood:r.mood,question:r.question,hook:r.hook});
     if(r.needsConfirm||l.items.some(i=>!i.pid)){l.status='confirm';save();render();openConfirm(l.id);return;}
     await commitLog(l);
   }catch(err){l.status='error';l.err=err.message||String(err);save();render();}
@@ -643,6 +709,7 @@ async function commitLog(l){
   l.spendAlert=spendAlert(l);
   l.status='replying';l.stage='reply';save();render();
   await replyLog(l);
+  if(l.status==='done')maybeShare(l);// 后台，不等它
   // 编辑过的记录：旧档案里还有改之前的内容，按全部记录重写；新记录：在旧档案上增量更新
   if(l.rebuildPids){const all=[...new Set([...l.rebuildPids,...logPids(l)])];delete l.rebuildPids;save();all.forEach(pid=>rebuildProfile(pid,false));}
   else updateProfiles(logPids(l),l);
@@ -713,10 +780,117 @@ ${openBlockersText(pids)}
 今天原文：${rawOf(l)}
 投入提示：${l.spendAlert||'（无）'}
 模式：${mode}`;
-  try{l.reply=(await chat([{role:'system',content:sys},{role:'user',content:user}],0.8)).replace(/^["“]|["”]$/g,'');l.status='done';l.err='';}
+  try{l.reply=(await chat([{role:'system',content:sys},{role:'user',content:user}],0.8)).replace(/^["“]|["”]$/g,'');l.status='done';l.err='';
+    if(S.settings.autoOpen&&V.fresh.has(l.id))V.open.add(l.id);
+    V.fresh.delete(l.id);l.replySeen=V.open.has(l.id);}
   catch(err){l.status='error';l.stage='reply';l.err=err.message||String(err);}
   save();render();
 }
+
+/* ============ 提示词⑤ 关联分享 ============ */
+const SHARE_KINDS={link_self:'你之前也……',blocker_tip:'关于这个磕绊',knowledge:'延伸一下'};
+const SHARE_KNAME={link_self:'关联记录',blocker_tip:'磕绊思路',knowledge:'延伸知识'};
+const SHARE_BAD=['太泛了','我早就知道','不准确','和我关系不大','太长'],SHARE_GOOD=['正好用得上','学到新东西','呼应得很准'];
+function sharesOf(logId){return (S.shares||[]).filter(s=>s.logId===logId&&s.state!=='drop');}
+function removeShares(logId){const ids=new Set(S.shares.filter(s=>s.logId===logId).map(s=>s.id));if(!ids.size)return;ids.forEach(tomb);S.shares=S.shares.filter(s=>!ids.has(s.id));S.feedback=S.feedback.filter(f=>!ids.has(f.ref));}
+function stripUrls(t){return String(t||'').replace(/(?:https?:\/\/|www\.)[^\s，。；、）)」]+/gi,'').replace(/[A-Za-z0-9][A-Za-z0-9.-]*\.(?:com|cn|net|org|io|cc|me|info|top|xyz)(?:\/[^\s，。；、）)」]*)?/gi,'').replace(/[（(]\s*[)）]/g,'').replace(/(详见|参见|参考|可参考|见)\s*(?=[。，；,.;]|$)/g,'').replace(/[，,]\s*([。.])/g,'$1').replace(/[ \t]{2,}/g,' ').trim();}
+// 代码先判断要不要分享，返回跳过的原因；空字符串 = 可以调用 AI
+function shareSkip(l){const st=S.settings,h=l.hook;
+  if(!st.key)return 'nokey';
+  if(st.shareMode==='off')return 'off';
+  if(!h||!h.topic)return 'nohook';
+  if(l.mode==='log_only')return 'log_only';
+  if(l.mood==='low'||l.mood==='very_low')return 'mood';
+  if(l.status!=='done')return 'notdone';
+  if(sharesOf(l.id).length)return 'exists';
+  const pid=logPids(l)[0];if(!pid)return 'nopid';
+  const muted=st.shareMuted||[];if(Object.keys(SHARE_KINDS).every(k=>muted.includes(k)))return 'allmuted';
+  if(st.shareMode!=='always'&&!['link_self','blocker_tip'].includes(h.kind_hint)&&S.shares.some(s=>s.pid===pid&&l.ts-s.ts<2*DAY&&s.ts<=l.ts+DAY))return 'recent';
+  return '';}
+const SHQ=new Set();
+async function maybeShare(l){
+  if(shareSkip(l)||SHQ.has(l.id))return;
+  SHQ.add(l.id);
+  try{
+    const st=S.settings,h=l.hook,pid=logPids(l)[0],p=P(pid);
+    const today=rawOf(l)+' '+h.topic;
+    const itemsTxt=x=>x.items.map(i=>TYPES[i.type]+'：'+i.content).join('；');
+    const cands=S.logs.filter(x=>x.id!==l.id&&x.status==='done'&&x.ts<l.ts&&l.ts-x.ts<=180*DAY)
+      .map(x=>({x,s:fuSim(today,rawOf(x)+' '+itemsTxt(x))})).filter(c=>c.s>0).sort((a,b)=>b.s-a.s).slice(0,8).map(c=>c.x);
+    const solved=S.blockers.filter(b=>b.solved&&P(b.pid)).map(b=>({b,s:fuSim(h.topic,b.content)})).sort((a,b)=>b.s-a.s).slice(0,3).map(c=>c.b);
+    const allowed=new Set([...cands.map(x=>x.id),...solved.map(b=>b.logId).filter(id=>id&&L(id))]);
+    const topics=S.shares.filter(s=>s.pid===pid).sort((a,b)=>a.ts-b.ts).slice(-20).map(s=>s.topic);
+    const muted=st.shareMuted||[];
+    const sys=persona()+`
+
+任务：用户刚写了一条记录，你已经回应过了。现在判断要不要顺便分享一个相关的点。只输出 JSON。
+
+【三种分享，按优先级选一种，或者不分享】
+1. link_self：今天的内容和 TA 过去的某条记录有真实的呼应（同样的卡点、相似的方法、一个项目的经验能用到另一个项目、之前说过的打算现在实现了）。只能引用"候选的过去记录"和"已解决磕绊"里的内容，必须填 ref_log_ids，不能编造。
+2. blocker_tip：今天有磕绊，你知道比较确定的常见原因、解法或工具。
+3. knowledge：今天提到的概念、工具或方法，有一个 TA 大概率会感兴趣、并且用得上的延伸知识。
+
+【什么时候不分享（share 填 false）】
+- 呼应很牵强，或者知识很泛泛，对 TA 没有实际用处；
+- 和"已分享过的主题"重复或很接近；
+- TA 的熟悉程度说明 TA 已经懂这个；
+- 种类在"不想要的分享种类"里。
+宁可不分享，也不要凑。
+
+【准确性】
+- 只讲比较确定的通用知识。具体的数字、版本号、错误码含义、价格、规定，拿不准就不要写，或者明确写"这个不太确定，建议查一下"，同时 confidence 填 low。
+- 不写任何网址和链接。想让 TA 查资料，就给 2～3 个搜索关键词。
+- 不推荐具体的付费产品或店铺。
+
+【写法】
+- 像朋友顺口一提："对了，……""想起来……"，不像教科书，不说"你应该"。
+- 按 TA 的熟悉程度说话：新手讲清楚一点，熟手直接说重点。
+- text ≤150 字，不用列表和标题。
+- topic 是一句话主题，≤20 字，用来在知识卡片里当标题。
+
+【输出格式】
+{"share":true,"kind":"link_self","topic":"……","text":"……","ref_log_ids":["e..."],"search_keywords":["……","……"],"confidence":"high"}
+不分享时：{"share":false}`+shareFeedbackText();
+    const user=`今天：${dkey(l.ts)}（周${WEEK[new Date(l.ts).getDay()]}）
+项目：${p.name}，${p.desc||p.cat}
+项目档案：
+${p.profile||'（还是空的）'}
+TA 在这个领域的熟悉程度：${(p.pf&&p.pf.familiarity)||'（看不出来）'}
+今天原文：${rawOf(l)}
+今天拆分结果：${JSON.stringify(l.items.map(i=>({project:P(i.pid)?.name,type:i.type,content:i.content})))}
+知识点线索：${JSON.stringify(h)}
+候选的过去记录：${JSON.stringify(cands.map(x=>({id:x.id,date:dkey(x.ts),project:logPids(x).map(id=>P(id)?.name).filter(Boolean).join('、'),raw:rawOf(x).slice(0,120),items:itemsTxt(x)})))}
+相关的已解决磕绊：${JSON.stringify(solved.map(b=>({log_id:b.logId||null,project:P(b.pid)?.name,content:b.content,solved_in_days:Math.max(0,Math.round(((b.solvedTs||b.last)-b.first)/DAY))})))}
+已分享过的主题：${JSON.stringify(topics)}
+不想要的分享种类：${JSON.stringify(muted)}`;
+    const out=parseJSON(await chat([{role:'system',content:sys},{role:'user',content:user}],0.5,{json:true}));
+    if(!out||out.share!==true||!SHARE_KINDS[out.kind])return;
+    const kind=out.kind;if((S.settings.shareMuted||[]).includes(kind))return;
+    let refs=(Array.isArray(out.ref_log_ids)?out.ref_log_ids:[]).map(String);
+    if(kind==='link_self'){if(!refs.length||!refs.every(id=>allowed.has(id)))return;}else refs=refs.filter(id=>allowed.has(id));
+    const text=stripUrls(out.text).slice(0,150),topic=stripUrls(out.topic).slice(0,20);
+    if(!text)return;
+    const keywords=(Array.isArray(out.search_keywords)?out.search_keywords:[]).map(k=>stripUrls(k).slice(0,20)).filter(Boolean).slice(0,3);
+    if(L(l.id)!==l||l.status!=='done'||sharesOf(l.id).length)return;// 期间被删、被编辑或已经有了
+    S.shares.push({id:uid('s'),logId:l.id,pid,kind,topic:topic||text.slice(0,20),text,keywords,refLogIds:[...new Set(refs)],confidence:['high','medium','low'].includes(out.confidence)?out.confidence:'medium',ts:Date.now(),state:'new',seen:V.open.has(l.id),thread:[]});
+    save();render();
+  }catch(e){console.warn('关联分享没成功',e);}
+  finally{SHQ.delete(l.id);}
+}
+async function shareFollowUp(s,text){
+  const l=L(s.logId);const pids=l?logPids(l):[s.pid].filter(P);
+  s.thread.push({role:'user',text,ts:Date.now()});s.replying=true;save();render();
+  const msgs=[{role:'system',content:persona()+`\n\n你之前在 TA 的一条记录下面顺便分享了一个点，现在 TA 就这个点接着问你。像微信聊天一样接话，1～4 句，不超过 150 字。只讲比较确定的通用知识，拿不准就直说"这个不太确定，建议查一下"；不写任何网址和链接，想让 TA 查资料就给搜索关键词；不推荐具体的付费产品或店铺。\n你分享的主题：${s.topic}\n你分享的内容：${s.text}\n搜索关键词：${(s.keywords||[]).join('、')||'（无）'}\n项目档案：\n${profilesText(pids)}\n未解决磕绊：\n${openBlockersText(pids)}`+feedbackText()},
+    {role:'user',content:l?rawOf(l):'（原记录已删除）'},{role:'assistant',content:(l&&l.reply&&l.reply!=='记下了。'?l.reply+'\n\n':'')+s.text}];
+  s.thread.filter(m=>!m.err).forEach(m=>msgs.push({role:m.role==='user'?'user':'assistant',content:m.text}));
+  try{s.thread.push({role:'ai',text:stripUrls(await chat(msgs,0.6)),ts:Date.now()});if(l&&!V.open.has(l.id)&&V.tab!=='lists')l.replySeen=false;}
+  catch(err){s.thread.push({role:'ai',text:'（没回上：'+err.message+'）',ts:Date.now(),err:true});}
+  s.replying=false;save();render();
+}
+function copyText(t){const ok=()=>toast('已复制，可以去搜');
+  const fb=()=>{const ta=document.createElement('textarea');ta.value=t;ta.setAttribute('readonly','');ta.style.cssText='position:fixed;top:0;left:0;opacity:0';document.body.appendChild(ta);ta.select();let done=false;try{done=document.execCommand('copy');}catch(e){}ta.remove();done?ok():toast('复制不了，长按手动复制：'+t);};
+  try{if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(t).then(ok,fb);return;}}catch(e){}
+  fb();}
 
 /* ============ 提示词③ 档案 ============ */
 const PILLARS=[['progress','进展','做成了什么、走到了哪一步'],['block','卡点','卡在哪、反复出现的问题'],['rhythm','投入','怎么做、什么节奏']];
@@ -729,7 +903,7 @@ function profileToText(pf){
 function normProfile(o){
   const s=(v,n)=>String(v||'').trim().slice(0,n);
   const byKey={};(Array.isArray(o.pillars)?o.pillars:[]).forEach(x=>{if(x&&x.key)byKey[x.key]=x;});
-  return {goal:s(o.goal,40),headline:s(o.headline,60),
+  return {goal:s(o.goal,40),headline:s(o.headline,60),familiarity:s(o.familiarity,30),
     pillars:PILLARS.map(([k,t])=>{const x=byKey[k]||{};return {key:k,title:t,point:s(x.point,40)||'暂无',
       facts:(Array.isArray(x.facts)?x.facts:[]).filter(f=>f&&f.t).slice(0,3).map(f=>({d:/^\d{4}-\d\d-\d\d$/.test(f.d||'')?f.d:'',t:s(f.t,36)}))};})};
 }
@@ -748,8 +922,9 @@ const PROFILE_RULES=`【档案用金字塔原理写：结论先行、以上统�
 - 短句、名词化，像档案卡片，不像作文。不写"用户""TA 表示"这类主语。
 - 用 TA 自己的叫法（项目里的专有名词、人名、机构名照抄）。
 - 旧档案里仍然成立的保留，过时的删掉，矛盾的以新记录为准；facts 满了，新的挤掉最不重要的旧的。
-- 全部加起来不超过 250 字。`;
-const PROFILE_FORMAT=`{"profile":{"goal":"……","headline":"……","pillars":[{"key":"progress","point":"……","facts":[{"d":"YYYY-MM-DD","t":"……"}]},{"key":"block","point":"……","facts":[]},{"key":"rhythm","point":"……","facts":[]}]},"follow_ups":[{"content":"……","due_date":"YYYY-MM-DD"}]}`;
+- 全部加起来不超过 250 字。
+- familiarity：一句话（≤30 字），写 TA 在这个项目领域的熟悉程度和已经掌握的东西，只根据记录判断，看不出来就留空。它不算在三根支柱里。`;
+const PROFILE_FORMAT=`{"profile":{"goal":"……","headline":"……","familiarity":"……","pillars":[{"key":"progress","point":"……","facts":[{"d":"YYYY-MM-DD","t":"……"}]},{"key":"block","point":"……","facts":[]},{"key":"rhythm","point":"……","facts":[]}]},"follow_ups":[{"content":"……","due_date":"YYYY-MM-DD"}]}`;
 const FU_RULE=`- 另外输出 follow_ups：TA 说过"下周要……""打算……"的事，以及值得过几天问一句的事。每条一句话；due_date 按 TA 说的时间推算（"明天"→明天，"周末"→本周六，"下周"→下周一）；说"过几天"或没说时间的，填今天之后第 3 天；已经做完或过时的不要再列。最多 5 条。follow_ups 不要写进档案里。
 - 现有的待回访里仍然成立的，content 原样照抄，不要改写措辞。
 - "已完成或不用再问"列表里的事，不要再列进 follow_ups。`;
@@ -760,7 +935,7 @@ function fuSim(a,b){a=fuNorm(a);b=fuNorm(b);if(!a||!b)return 0;if(a===b)return 1
   const A=g(a),B2=g(b);let n=0;A.forEach((v,k)=>{n+=Math.min(v,B2.get(k)||0);});return 2*n/Math.max(1,(a.length-1)+(b.length-1));}
 function fuClosedText(p){const c=p.followUps.filter(f=>f.done).slice(-10);return c.length?JSON.stringify(c.map(f=>f.content)):'（无）';}
 function applyProfile(p,out){
-  if(out.profile&&typeof out.profile==='object'){p.pf=normProfile(out.profile);p.profile=profileToText(p.pf);p.profileTs=Date.now();}
+  if(out.profile&&typeof out.profile==='object'){const fam=p.pf&&p.pf.familiarity;p.pf=normProfile(out.profile);if(!p.pf.familiarity&&fam)p.pf.familiarity=fam;p.profile=profileToText(p.pf);p.profileTs=Date.now();}
   else if(typeof out.profile==='string'&&out.profile.trim()){p.profile=out.profile.slice(0,700);p.pf=null;p.profileTs=Date.now();}
   if(Array.isArray(out.follow_ups)){
     const closed=p.followUps.filter(f=>f.done).slice(-10);
@@ -867,12 +1042,13 @@ function profileHTML(p){
     if(!p.profile)return `<div class="memo">${head}<em class="mempty">写几笔之后，这里会有一份关于这个项目的档案。</em>${err}</div>`;
     return `<div class="memo">${head}<div class="pold">${esc(p.profile)}</div>${p.profiling?'':`<button class="mini" data-rebuild="${p.id}">按新格式重新整理</button>`}${err}</div>`;
   }
-  const pf=p.pf;const open=V.pfOpen===p.id;
+  const pf=p.pf;const open=V.pfOpen===p.id;const show=V.pfShow===p.id;
   return `<div class="memo pyr">${head}
     ${pf.goal?`<div class="pgoal">目标 · ${esc(pf.goal)}</div>`:''}
-    <div class="phl">${esc(pf.headline||'')}</div>
-    <div class="pills">${pf.pillars.map(x=>`<div class="pill ${x.point==='暂无'?'none':''}"><div class="ptitle">${x.title}</div><div class="ppoint">${esc(x.point)}</div>${open&&x.facts.length?`<ul>${x.facts.map(f=>`<li>${f.d?`<span class="fd">${f.d.slice(5).replace('-','/')}</span>`:''}${esc(f.t)}</li>`).join('')}</ul>`:''}</div>`).join('')}</div>
-    <div class="pact">${pf.pillars.some(x=>x.facts.length)?`<button class="mini" data-pfopen="${p.id}">${open?'收起依据':'看依据'}</button>`:''}${p.profiling?'':`<button class="mini sub" data-rebuild="${p.id}">重新整理</button>`}</div>${err}</div>`;
+    <button class="pfhead" data-pfshow="${p.id}" aria-expanded="${show}"><span class="phl">${esc(pf.headline||'（还没有结论）')}</span><span class="fcar">▾</span></button>
+    ${show?`<div class="pfbody fx"><div class="pills">${pf.pillars.map(x=>`<div class="pill ${x.point==='暂无'?'none':''}"><div class="ptitle">${x.title}</div><div class="ppoint">${esc(x.point)}</div>${open&&x.facts.length?`<ul>${x.facts.map(f=>`<li>${f.d?`<span class="fd">${f.d.slice(5).replace('-','/')}</span>`:''}${esc(f.t)}</li>`).join('')}</ul>`:''}</div>`).join('')}</div>
+    <div class="pact">${pf.pillars.some(x=>x.facts.length)||pf.familiarity?`<button class="mini" data-pfopen="${p.id}">${open?'收起依据':'看依据'}</button>`:''}${p.profiling?'':`<button class="mini sub" data-rebuild="${p.id}">重新整理</button>`}</div>
+    ${open&&pf.familiarity?`<div class="pfam">熟悉程度：${esc(pf.familiarity)}</div>`:''}</div>`:''}${err}</div>`;
 }
 
 /* ============ 提示词④ 开场关心 ============ */
@@ -1140,7 +1316,7 @@ async function followUp(l,text){
     {role:'user',content:rawOf(l)},{role:'assistant',content:l.reply||'记下了。'}];
   l.thread.filter(m=>m.role!=='memo'&&!m.err).forEach(m=>msgs.push({role:m.role==='user'?'user':'assistant',content:m.text}));
   let ok=false;
-  try{l.thread.push({role:'ai',text:await chat(msgs,0.8),ts:Date.now()});ok=true;}
+  try{l.thread.push({role:'ai',text:await chat(msgs,0.8),ts:Date.now()});ok=true;if(!V.open.has(l.id))l.replySeen=false;}
   catch(err){l.thread.push({role:'ai',text:'（没回上：'+err.message+'）',ts:Date.now(),err:true});}
   l.replying=false;save();render();
   if(ok)digestThread(l);
@@ -1222,6 +1398,10 @@ function setRating(ref,kind,text,v){
 const rating=ref=>S.feedback.find(x=>x.ref===ref);
 function ratingRow(ref,kind){
   const f=rating(ref);
+  if(kind==='share'){let x=`<div class="rate"><button class="${f?.v==='good'?'on':''}" data-rate="${ref}|share|good">有用</button><button class="${f?.v==='bad'?'on bad':''}" data-rate="${ref}|share|bad">没用</button>`;
+    if(f&&V.reasonFor!==ref)x+=`<button class="why" data-reasonedit="${ref}">${f.reason?'· '+esc(f.reason)+' ✎':'+ 写个原因'}</button>`;x+='</div>';
+    if(f&&V.reasonFor===ref){const opts=f.v==='bad'?SHARE_BAD:SHARE_GOOD;x+=`<div class="reasons">${opts.map(r=>`<button data-reason="${ref}|${r}">${r}</button>`).join('')}</div><form class="replybox" data-reasonform="${ref}"><input name="t" placeholder="说说为什么（可不填）" value="${esc(f.reason&&!opts.includes(f.reason)?f.reason:'')}" autocomplete="off" maxlength="60"><button>记下</button></form>`;}
+    return x;}
   let h=`<div class="rate"><button class="${f?.v==='good'?'on':''}" data-rate="${ref}|${kind}|good">好</button><button class="${f?.v==='mid'?'on mid':''}" data-rate="${ref}|${kind}|mid">一般</button><button class="${f?.v==='bad'?'on bad':''}" data-rate="${ref}|${kind}|bad">不好</button>`;
   if(f&&f.reason&&V.reasonFor!==ref)h+=`<button class="why" data-reasonedit="${ref}" title="改原因">· ${esc(f.reason)} ✎</button>`;
   else if(f&&!f.reason&&V.reasonFor!==ref)h+=`<button class="why" data-reasonedit="${ref}">+ 写个原因</button>`;
@@ -1254,6 +1434,12 @@ function toMarkdown(){
     if(bs.length){out.push(`### 磕绊`,``);bs.forEach(b=>out.push(`- [${b.solved?'x':' '}] ${b.content}（${dkey(b.first)} 首次${b.solved&&b.solvedTs?'，'+dkey(b.solvedTs)+' 解决':'，最近提到 '+dkey(b.last)}）`));out.push(``);}
     const fu=p.followUps.filter(f=>!f.done);
     if(fu.length){out.push(`### 说过要做的`,``);fu.forEach(f=>out.push(`- ${f.content}（${f.due}）`));out.push(``);}
+    const cs=S.shares.filter(s=>s.pid===p.id&&s.state!=='drop').sort((a,b)=>(b.state==='star')-(a.state==='star')||a.ts-b.ts);
+    if(cs.length){out.push(`### 知识卡片`,``);cs.forEach(s=>{const refs=(s.refLogIds||[]).map(L).filter(Boolean);
+      out.push(`- **${s.topic}**${s.state==='star'?' ★':''}（${SHARE_KNAME[s.kind]} · ${dkey(s.ts)}${s.confidence==='low'?' · 不太确定，建议查证':''}）`,`  ${s.text}`);
+      if(refs.length)out.push(`  - 关联记录：${refs.map(r=>dkey(r.ts)+' '+logPreview(r).slice(0,30)).join('；')}`);
+      if((s.keywords||[]).length)out.push(`  - 搜索关键词：${s.keywords.join('、')}`);
+      (s.thread||[]).filter(m=>!m.err).forEach(m=>out.push(`  - ${m.role==='user'?'我':nm}：${m.text.replace(/\n/g,' ')}`));});out.push(``);}
     const ls=S.logs.filter(l=>logPids(l).includes(p.id)).sort((a,b)=>a.ts-b.ts);
     if(ls.length)out.push(`### 记录`,``);
     let last='';
@@ -1264,6 +1450,7 @@ function toMarkdown(){
       l.items.filter(i=>i.pid===p.id).forEach(i=>out.push(`- ${TYPES[i.type]}：${i.content}${i.minutes?` · ${i.minutes} 分钟`:''}${i.money?` · ${i.money} 元`:''}`));
       out.push(``);
       if(l.reply)out.push(`> ${nm}：${l.reply.replace(/\n/g,'\n> ')}`,``);
+      sharesOf(l.id).filter(s=>s.pid===p.id).forEach(s=>out.push(`> ${nm}顺便想到（${SHARE_KNAME[s.kind]}）：${s.text}`,``));
       (l.thread||[]).filter(m=>!m.err).forEach(m=>out.push(m.role==='memo'?`> （${nm}记下了：${m.text.replace(/^记下了[：:]?/,'')}）`:m.role==='user'?`> 我：${m.text}`:`> ${nm}：${m.text}`,`>`));
       if((l.thread||[]).length)out.push(``);
     });
@@ -1446,13 +1633,14 @@ function afterVoice(){
 }
 
 /* ============ 视图 ============ */
-let V={tab:'home',day:null,rid:null,mopen:{},dirY:0,rvk:'day',pid:null,filter:'all',replyOpen:null,lt:'stuck',lcat:'all',lpid:'all',showSolved:false,ideaAll:false,reasonFor:null};
+let V={open:new Set(),fresh:new Set(),anim:null,cardOpen:new Set(),skind:'all',shReply:null,opOpen:false,rvPeek:null,pfShow:null,tab:'home',day:null,rid:null,mopen:{},dirY:0,rvk:'day',pid:null,filter:'all',replyOpen:null,lt:'stuck',lcat:'all',lpid:'all',showSolved:false,ideaAll:false,reasonFor:null};
 const $=s=>document.querySelector(s);
+function foldAnim(el,done){if(!el||!el.animate){done();return;}el.style.overflow='hidden';const hh=el.scrollHeight;let fin=false;const go=()=>{if(!fin){fin=true;done();}};try{const a=el.animate([{maxHeight:hh+'px',opacity:1},{maxHeight:'0px',opacity:0}],{duration:170,easing:'ease-in'});a.onfinish=go;setTimeout(go,260);}catch(e){go();}}
 function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove('show'),1800);}
 const AN=()=>esc(S.settings.aiName||'小记');
 
 function render(){
-  const a=$('#app');setTimeout(()=>{fillCop();hydratePhotos();},0);
+  const a=$('#app');setTimeout(()=>{fillCop();hydratePhotos();V.anim=null;if(V.flash){const el=document.getElementById('log-'+V.flash);V.flash=null;if(el){el.scrollIntoView&&el.scrollIntoView({block:'center'});el.classList.add('flash');}}},0);
   if(V.tab==='project'&&P(V.pid))a.innerHTML=viewProject();
   else if(V.tab==='projects')a.innerHTML=viewProjects();
   else if(V.tab==='lists')a.innerHTML=viewLists();
@@ -1474,13 +1662,14 @@ function greet(){const h=new Date().getHours();return h<6?'夜深了':h<11?'早�
 
 function openerCard(){
   const op=S.opener;if(!op||op.day!==dkey(Date.now())||op.dismissed)return '';
-  if(op.status==='pending')return `<div class="opener wait"><div class="who">${AN()}</div><div class="txt">翻了翻你的本子……</div></div>`;
+  if(op.status==='pending')return `<div class="fline wait"><span class="spin"></span>${AN()}翻了翻你的本子……</div>`;
   if(op.status!=='done')return '';
+  if(!V.opOpen)return `<button class="fline" data-act="opopen">${op.seen?'':'<i class="fdot"></i>'}<span>${AN()}有句话想跟你说</span><span class="fcar">▾</span></button>`;
   let acts=`<button data-act="compose${op.pid?':'+op.pid:''}">回它一笔</button>`;
   if(op.kind==='blocker'&&B(op.ref)&&!B(op.ref).solved)acts+=`<button data-solveop="${op.ref}">已经解决了</button>`;
   if(op.kind==='follow_up')acts+=`<button data-fudone="${op.ref}">做过了</button><button data-fudrop="${op.ref}">不用了</button>`;
   acts+=`<button class="sub2" data-act="dismissop">知道了</button>`;
-  return `<div class="opener"><div class="who">${AN()}</div><div class="txt">${esc(op.text)}</div><div class="acts">${acts}</div>${ratingRow(op.id,'opener')}</div>`;
+  return `<button class="fline open" data-act="opopen"><span>${AN()}有句话想跟你说</span><span class="fcar">▾</span></button><div class="opener${V.anim==='op'?' fx':''}"><div class="who">${AN()}</div><div class="txt">${esc(op.text)}</div><div class="acts">${acts}</div>${ratingRow(op.id,'opener')}</div>`;
 }
 function viewHome(){
   if(!S.projects.length)return header('项目手记')+`<div class="empty" style="padding-top:60px"><span class="hand">${greet()}，先建一个项目吧</span>工作、爱好、副业、想学的东西，都可以算一个项目。<br>之后每天写一笔，${AN()}会在旁边回你。<button class="primary" data-act="newproj" style="max-width:240px">新建第一个项目</button></div>`;
@@ -1489,7 +1678,9 @@ function viewHome(){
   let h=header('项目手记',`${greet()}${S.settings.nick?'，'+esc(S.settings.nick):''}。在做的项目有 ${act.length} 个${wrote?'。':'，今天还没写。'}`);
   if(!S.settings.key)h+=`<div class="nudge"><div class="hand">还没接上 AI。到「设置」里填一下 API Key，${AN()}才能回你。</div><button data-nav="settings">去设置</button></div>`;
   const unseen=S.reviews.filter(r=>r.status==='done'&&!r.seen).sort((a,b)=>b.ts-a.ts);
-  if(unseen.length)h+=`<div class="nudge"><div class="hand">${AN()}写好了${RV_NEWNAME[unseen[0].kind]}${unseen.length>1?`，还有 ${unseen.length-1} 篇没看`:''}。</div><button data-rid="${unseen[0].id}">去看看</button></div>`;
+  if(unseen.length){const r=unseen[0];const pk=V.rvPeek===r.id;
+    h+=`<button class="fline ${pk?'open':''}" data-rvpeek="${r.id}">${pk?'':'<i class="fdot"></i>'}<span>${AN()}写好了${RV_NEWNAME[r.kind]}${unseen.length>1?`（还有 ${unseen.length-1} 篇没看）`:''}</span><span class="fcar">▾</span></button>`;
+    if(pk)h+=`<div class="rvpeek${V.anim==='rv'?' fx':''}"><div class="rvbody">${esc(r.text)}</div><div class="acts"><button data-rid="${r.id}">打开，聊几句</button><button class="sub2" data-rvseen="${r.id}">看过了</button></div></div>`;}
   h+=openerCard();
   const pend=S.logs.filter(l=>l.status==='confirm');
   pend.forEach(l=>h+=`<div class="nudge"><div class="hand">有一条记录等你确认：${esc(l.question||'有几段不确定归到哪个项目')}</div><button data-confirm="${l.id}">去确认</button></div>`);
@@ -1531,7 +1722,7 @@ function directory(ls){
 }
 // 某一天
 function viewDay(){
-  const k=V.day;const all=filteredLogs();const ls=all.filter(l=>dkey(l.ts)===k).sort((a,b)=>a.ts-b.ts);
+  const k=V.day;const all=filteredLogs();const ls=all.filter(l=>dkey(l.ts)===k).sort((a,b)=>b.ts-a.ts);
   const keys=[...new Set(all.map(l=>dkey(l.ts)))];const i=keys.indexOf(k);
   const newer=i>0?keys[i-1]:(i<0?keys.filter(x=>x>k).pop():null),older=i>=0?keys[i+1]:keys.find(x=>x<k);
   const d=new Date(k);const n=daysAgo(k);const fp=V.filter!=='all'?V.filter:'';
@@ -1595,6 +1786,19 @@ function itemChip(i,multi){
   if(i.type==='blocker'){const b=B(i.blockerId);return `<span class="chip ${b&&b.solved?'solved':'block'}">${dot}<b>${b&&b.solved?'已解决':'磕绊'}</b>${esc(i.content)}${money}</span>`;}
   return `<span class="chip ${i.type==='idea'?'idea':''}">${dot}<b>${TYPES[i.type]}</b>${esc(i.content)}${money}</span>`;
 }
+function shareCard(s,inList){
+  const refs=(s.refLogIds||[]).map(L).filter(Boolean);
+  const th=(s.thread||[]).map(m=>m.role==='user'?`<div class="me">${esc(m.text)}</div>`:`<div class="note${m.err?' err':''}" style="margin-top:8px"><div class="txt">${esc(m.text)}</div></div>`).join('')+(s.replying?`<div class="note wait" style="margin-top:8px"><div class="txt">……</div></div>`:'');
+  const muted=(S.settings.shareMuted||[]).includes(s.kind);
+  return `<div class="share k-${s.kind} ${s.state==='star'?'star':''}">
+  ${inList?'':`<div class="shh"><b>${AN()}顺便想到</b><span>${SHARE_KINDS[s.kind]}</span>${s.state==='star'?'<i>★ 留着</i>':''}</div>`}
+  <div class="shtxt">${esc(s.text)}${s.confidence==='low'?'<small class="lowc">不太确定，建议查证</small>':''}</div>
+  ${refs.length?`<div class="shrefs">${refs.map(r=>`<button data-reflog="${r.id}"><span>${dkey(r.ts).slice(5).replace('-','/')}</span>${esc(logPids(r).map(id=>P(id)?.name).filter(Boolean).join('、')||'待归类')}<em>${esc(logPreview(r).slice(0,30))}</em></button>`).join('')}</div>`:''}
+  ${(s.keywords||[]).length?`<div class="shkw">${s.keywords.map(k=>`<button data-kw="${esc(k)}">${esc(k)}</button>`).join('')}<span>点一下复制，去搜</span></div>`:''}
+  ${th?`<div class="thread">${th}</div>`:''}
+  ${V.shReply===s.id?`<form class="replybox" data-shreply="${s.id}"><input name="t" placeholder="接着问……" autocomplete="off" required><button>发送</button></form>`:''}
+  ${ratingRow(s.id,'share')}
+  <div class="shacts"><button data-shstar="${s.id}">${s.state==='star'?'★ 留着了':'☆ 留着'}</button>${s.replying?'':`<button data-shask="${s.id}">接着问</button>`}${inList?`<button data-shdrop="${s.id}">删除</button>`:(muted?'':`<button class="sub" data-shmute="${s.kind}">这类不用分享</button>`)}</div></div>`;}
 function logCard(l){
   const pids=logPids(l);const ps=pids.map(P);
   const first=ps[0]||(l.forcePid&&P(l.forcePid))||{name:'待归类',color:'#97A1AD'};
@@ -1604,26 +1808,40 @@ function logCard(l){
   let chips='';
   if(l.status!=='splitting'&&l.status!=='confirm')l.items.forEach(i=>chips+=itemChip(i,multi));
   if(l.mood==='low'||l.mood==='very_low')chips+=`<span class="chip"><b>状态</b>${MOODS[l.mood]}</span>`;
-  let note='';
-  if(l.status==='splitting')note=`<div class="note wait"><div class="txt">${AN()}${l.looking?'在看照片':'正在整理'}……</div></div>`;
-  else if(l.status==='confirm')note=`<div class="note"><div class="who">${AN()}想确认一下</div><div class="txt">${esc(l.question||'有几段不确定归到哪个项目。')}</div><div class="eacts" style="margin-top:6px"><button style="color:var(--pen)" data-confirm="${l.id}">去确认</button></div></div>`;
-  else if(l.status==='replying')note=`<div class="note wait"><div class="txt">${AN()}在看……</div></div>`;
-  else if(l.status==='error')note=`<div class="note err"><div class="who">没收到回应</div><div class="txt">${esc(l.err)}</div></div>`;
-  else if(l.mode==='log_only'&&!l.exception)note=`<div class="quiet">只记录 · 记下了 · <button data-askai="${l.id}">想听听${AN()}怎么说</button></div>`;
-  else if(l.reply)note=`<div class="note${l.reply.length<=40?' light':''}"><div class="who">${AN()}${l.exception?' · 只记录模式，看你今天挺累，多说了一句':''}</div><div class="txt">${esc(l.reply)}</div>${ratingRow(l.id,'reply')}</div>`;
   if(l.spendAlert&&l.status==='done')chips+=`<span class="chip block"><b>投入提示</b>${esc(l.spendAlert)}</span>`;
-  let th='';
-  (l.thread||[]).forEach(m=>th+=m.role==='memo'?`<div class="memo-line">✓ ${esc(m.text)}</div>`:m.role==='user'?`<div class="me">${esc(m.text)}</div>`:`<div class="note${m.err?' err':''}" style="margin-top:8px"><div class="txt">${esc(m.text)}</div></div>`);
-  if(l.replying)th+=`<div class="note wait" style="margin-top:8px"><div class="txt">……</div></div>`;
-  const rb=V.replyOpen===l.id?`<form class="replybox" data-reply="${l.id}"><input name="t" placeholder="回一句……" autocomplete="off" required><button>发送</button></form>`:'';
+  const shs=sharesOf(l.id);
+  const turns=(l.thread||[]).filter(m=>m.role==='user').length;
   const busy=['splitting','replying'].includes(l.status);
-  return `<article class="entry" style="--c:${first.color};--bar:${bar}">
+  const quiet=l.mode==='log_only'&&!l.exception;
+  // 不折叠：等确认、出错
+  let fixed='',fold='',body='';
+  if(l.status==='confirm')fixed=`<div class="note"><div class="who">${AN()}想确认一下</div><div class="txt">${esc(l.question||'有几段不确定归到哪个项目。')}</div><div class="eacts" style="margin-top:6px"><button style="color:var(--pen)" data-confirm="${l.id}">去确认</button></div></div>`;
+  else if(l.status==='error')fixed=`<div class="note err"><div class="who">没收到回应</div><div class="txt">${esc(l.err)}</div></div>`;
+  else if(busy)fold=`<div class="fbar wait"><span class="spin"></span>${AN()}${l.status==='splitting'?(l.looking?'在看照片……':'在看……'):'在看……'}</div>`;
+  else if(quiet&&!turns&&!shs.length)fold=`<div class="fbar wait">记下了 · <button class="flink" data-askai="${l.id}">想听听${AN()}怎么说</button></div>`;
+  else{
+    const open=V.open.has(l.id);
+    const unseen=(l.reply&&l.replySeen===false)||shs.some(s=>!s.seen);
+    const parts=[quiet?'记下了':`${AN()}回了你`];if(shs.length)parts.push('有分享');if(turns)parts.push(`${turns} 条对话`);if(l.replying)parts.push('正在回…');
+    fold=`<button class="fbar ${open?'open':''}" data-fold="${l.id}" aria-expanded="${open}">${unseen?'<i class="fdot" aria-label="没看过"></i>':''}<span>${parts.join(' · ')}</span><span class="fcar">▾</span></button>`;
+    if(open){
+      let note='';
+      if(quiet)note=`<div class="quiet">只记录 · 记下了 · <button data-askai="${l.id}">想听听${AN()}怎么说</button></div>`;
+      else if(l.reply)note=`<div class="note${l.reply.length<=40?' light':''}"><div class="who">${AN()}${l.exception?' · 只记录模式，看你今天挺累，多说了一句':''}</div><div class="txt">${esc(l.reply)}</div></div>`;
+      let th='';
+      (l.thread||[]).forEach(m=>th+=m.role==='memo'?`<div class="memo-line">✓ ${esc(m.text)}</div>`:m.role==='user'?`<div class="me">${esc(m.text)}</div>`:`<div class="note${m.err?' err':''}" style="margin-top:8px"><div class="txt">${esc(m.text)}</div></div>`);
+      if(l.replying)th+=`<div class="note wait" style="margin-top:8px"><div class="txt">……</div></div>`;
+      const rb=V.replyOpen===l.id?`<form class="replybox" data-reply="${l.id}"><input name="t" placeholder="回一句……" autocomplete="off" required><button>发送</button></form>`:'';
+      body=`<div class="fbody${V.anim===l.id?' fx':''}">${chips?`<div class="chips">${chips}</div>`:''}${note}${shs.map(s=>shareCard(s,false)).join('')}${th?`<div class="thread">${th}</div>`:''}${!quiet&&l.reply?ratingRow(l.id,'reply'):''}${rb}</div>`;
+    }
+  }
+  const open=V.open.has(l.id);
+  return `<article class="entry" id="log-${l.id}" style="--c:${first.color};--bar:${bar}">
   <div class="ehead"><span class="pns">${names}</span><span class="tm">${hm(l.ts)}</span></div>
   ${l.raw?`<div class="etext">${esc(l.raw)}</div>`:''}
   ${(l.photos||[]).length?`<div class="phs">${l.photos.map((p,i)=>`<button class="ph" data-phview="${p.id}" aria-label="看大图"><img data-ph="${p.id}" alt="照片${i+1}"></button>`).join('')}</div>${!l.photoText&&!busy?`<div class="phmiss"><span>${esc(l.photoErr||AN()+'还没看过这些照片')}</span><button data-relook="${l.id}">让${AN()}看看照片</button></div>`:''}`:''}
-  ${chips?`<div class="chips">${chips}</div>`:''}
-  ${note}${th?`<div class="thread">${th}</div>`:''}${rb}
-  ${busy?'':`<div class="eacts">${l.status==='done'?`<button data-replyopen="${l.id}">接着聊</button><button data-rereply="${l.id}">换个回应</button>`:''}${l.status==='error'?`<button style="color:var(--pen)" data-retry="${l.id}">重试</button>`:''}<button data-edit="${l.id}">编辑</button><button data-del="${l.id}">删除</button></div>`}
+  ${fixed}${fold}${body}
+  ${busy?'':`<div class="eacts">${l.status==='done'&&open?`<button data-replyopen="${l.id}">接着聊</button>${quiet?'':`<button data-rereply="${l.id}">换个回应</button>`}`:''}${l.status==='error'?`<button style="color:var(--pen)" data-retry="${l.id}">重试</button>`:''}<button data-edit="${l.id}">编辑</button><button data-del="${l.id}">删除</button></div>`}
   </article>`;
 }
 
@@ -1682,11 +1900,13 @@ function viewLists(){
   const fus=S.projects.filter(p=>ok(p.id)).flatMap(p=>p.followUps.filter(f=>!f.done)).sort((a,b)=>a.due<b.due?-1:1);
   const ideasAll=allIdeas().filter(i=>ok(i.pid));const ideasLive=ideasAll.filter(i=>i.state==='new'||i.state==='star').sort((a,b)=>(b.state==='star')-(a.state==='star')||b.ts-a.ts);
   const gains=allGains().filter(g=>ok(g.pid));
+  const cardsAll=S.shares.filter(s=>s.state!=='drop'&&ok(s.pid)&&(V.skind==='all'||s.kind===V.skind)).sort((a,b)=>(b.state==='star')-(a.state==='star')||b.ts-a.ts);
+  const nCard=S.shares.filter(s=>s.state!=='drop'&&ok(s.pid)).length,cardsNew=S.shares.some(s=>s.state!=='drop'&&!s.seen&&ok(s.pid));
   const nStuck=open.length,nTodo=fus.length,nIdea=ideasLive.length,nGain=gains.length;
   const dueN=fus.filter(f=>f.due<=today).length,oldN=open.filter(b=>daysAgo(b.first)>=3).length;
   let h=header('清单','你提到过的事，帮你分好了类。');
   h+=`<div class="ltabs"><div class="lgroup"><span class="glabel">要处理的</span><button class="ltab ${V.lt==='stuck'?'on':''}" data-lt="stuck">卡着的<b>${nStuck}</b>${oldN?'<i class="hot"></i>':''}</button><button class="ltab ${V.lt==='todo'?'on':''}" data-lt="todo">说过要做的<b>${nTodo}</b>${dueN?'<i class="hot"></i>':''}</button></div>
-  <div class="lgroup"><span class="glabel">攒下来的</span><button class="ltab ${V.lt==='ideas'?'on':''}" data-lt="ideas">灵感<b>${nIdea}</b></button><button class="ltab ${V.lt==='gains'?'on':''}" data-lt="gains">收获<b>${nGain}</b></button></div></div>`;
+  <div class="lgroup"><span class="glabel">攒下来的</span><button class="ltab ${V.lt==='ideas'?'on':''}" data-lt="ideas">灵感<b>${nIdea}</b></button><button class="ltab ${V.lt==='gains'?'on':''}" data-lt="gains">收获<b>${nGain}</b></button><button class="ltab ${V.lt==='cards'?'on':''}" data-lt="cards">知识卡片<b>${nCard}</b>${cardsNew?'<i class="hot"></i>':''}</button></div></div>`;
   h+=`<div class="filters"><div class="frow"><span class="flabel">类别</span><div class="tabs"><button class="tab sm ${V.lcat==='all'?'on':''}" data-lcat="all">全部</button>${cats.map(c=>`<button class="tab sm ${V.lcat===c?'on':''}" data-lcat="${c}">${c}</button>`).join('')}</div></div>
   <div class="frow"><span class="flabel">项目</span><div class="tabs"><button class="tab sm ${V.lpid==='all'?'on':''}" data-lpid="all">全部</button>${projs.map(p=>`<button class="tab sm ${V.lpid===p.id?'on':''}" data-lpid="${p.id}"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</button>`).join('')}</div></div></div>`;
   const filtered=V.lcat!=='all'||V.lpid!=='all';
@@ -1705,6 +1925,12 @@ function viewLists(){
     if(!gains.length)h+=none(filtered?'':'还没攒下收获',filtered?'这个范围里还没有收获。':'学到的、得到的、让你开心的事，会自动收在这里。哪天低落了，回来翻翻。');
     else{let last='';gains.forEach(g=>{const m=dkey(g.ts).slice(0,7);if(m!==last){h+=`<div class="day">${m.replace('-','年')}月</div>`;last=m;}h+=gainItem(g);});}
   }
+  if(V.lt==='cards'){
+    h+=`<div class="filters" style="margin-top:-4px"><div class="frow"><span class="flabel">种类</span><div class="tabs"><button class="tab sm ${V.skind==='all'?'on':''}" data-skind="all">全部</button>${Object.keys(SHARE_KINDS).map(k=>`<button class="tab sm ${V.skind===k?'on':''}" data-skind="${k}">${SHARE_KNAME[k]}</button>`).join('')}</div></div></div>`;
+    if(!cardsAll.length)h+=none(filtered||V.skind!=='all'?'':'还没有知识卡片',filtered||V.skind!=='all'?'这个范围里没有。':`记录里提到具体的概念、工具或问题时，${AN()}会顺便分享一点相关的，都收在这里。点 ☆ 留着的排在最前面。`);
+    cardsAll.forEach(s=>{const p=P(s.pid)||{name:'',color:'#999'};const op=V.cardOpen.has(s.id);
+      h+=`<div class="kcard ${s.state==='star'?'star':''}"><button class="khead" data-card="${s.id}" aria-expanded="${op}">${s.seen?'':'<i class="fdot"></i>'}<span class="kt">${s.state==='star'?'<b class="kst">★</b>':''}${esc(s.topic)}</span><span class="from"><span class="dot" style="background:${p.color}"></span>${esc(p.name)} · ${SHARE_KNAME[s.kind]} · ${dkey(s.ts).slice(5).replace('-','/')}</span><span class="fcar">▾</span></button>${op?shareCard(s,true):''}</div>`;});
+  }
   return h;
 }
 function viewSettings(){
@@ -1716,9 +1942,15 @@ function viewSettings(){
   <label class="f">模型名</label><input class="inp" id="s_model" value="${esc(st.model)}" placeholder="deepseek-flash">
   <label class="f">API Key</label><input class="inp" id="s_key" type="password" value="${esc(st.key)}" placeholder="sk-…" autocomplete="off">
   <button class="primary" data-act="savecfg">保存</button><button class="ghost" data-act="testcfg">测试连接</button></div>
-  <div class="card"><h3 style="font-size:15px;margin-bottom:4px">打开时</h3>
+  <div class="card"><h3 style="font-size:15px;margin-bottom:4px">打开和显示</h3>
   <label class="toggle"><input type="checkbox" ${st.openCompose!==false?'checked':''} data-check="openCompose"> 一打开就进入「写一笔」</label>
-  <p class="hint">${AN()}的关心和新写好的复盘会在「写一笔」顶部提一句；点「取消」就回到首页。离开超过 10 分钟再回来，也会直接进入。没写完关掉的话，下次打开文字还在。</p></div>
+  <p class="hint">${AN()}的关心和新写好的复盘会在「写一笔」顶部提一句；点「取消」就回到首页。离开超过 10 分钟再回来，也会直接进入。没写完关掉的话，下次打开文字还在。</p>
+  <label class="toggle"><input type="checkbox" ${st.autoOpen?'checked':''} data-check="autoOpen"> 刚写完的那条自动展开</label>
+  <p class="hint">${AN()}的回应、分享和对话平时都收成一行，点开才看；打开这个开关，刚写完的那条回应出来后会自动展开。</p></div>
+  <div class="card"><h3 style="font-size:15px;margin-bottom:4px">关联分享</h3><p>${AN()}回应之后，有时会顺便分享一个相关的点：你以前类似的记录、磕绊的常见解法，或者一点延伸知识。都会收进「清单 → 知识卡片」。</p>
+  <label class="f">频率</label><div class="seg">${[['always','每次都看看'],['sometimes','偶尔'],['off','关闭']].map(([k,v])=>`<button class="${(st.shareMode||'sometimes')===k?'on':''}" data-sharemode="${k}">${v}</button>`).join('')}</div>
+  <p class="hint">只在记录里有具体知识点时才分享，大约每 3～5 条触发一次，每次多调用一次 AI。</p>
+  <label class="f">已关闭的分享种类</label>${(st.shareMuted||[]).length?`<div class="memlist">${st.shareMuted.map(k=>`<div class="memitem"><span>${SHARE_KNAME[k]||k}</span><button data-unmute="${k}">恢复</button></div>`).join('')}</div>`:'<p>没有。在分享卡片上点「这类不用分享」，会出现在这里。</p>'}</div>
   <div class="card"><h3 style="font-size:15px;margin-bottom:4px">语音和照片</h3><p>在「写一笔」里点麦克风说话，转成文字后再提交。录音只用来转文字，不会保存。<br>照片：${AN()}会先看一眼照片（课程封面、说明书、小票上的金额、截图里的字），再一起整理。服务商选 DeepSeek 时直接用上面的 Key 就能看图；其他服务商会改用下面的百炼 Key。照片存在这台手机的浏览器里，导出备份时会一起带上。</p>
   <label class="f">识别方式</label><div class="seg">${[['auto','自动'],['qwen','通义千问'],['browser','浏览器自带']].map(([k,v])=>`<button class="${(st.voice||'auto')===k?'on':''}" data-voice="${k}">${v}</button>`).join('')}</div>
   <p class="hint">通义千问最稳，需要阿里云百炼的 API Key；浏览器自带的免费，但国内常常连不上。自动：有百炼 Key 就用通义千问。</p>
@@ -1855,6 +2087,7 @@ function planMerge(inc){
   const mp=id=>idMap[id]||id;
   inc.logs.forEach(l=>{l.items.forEach(i=>{if(i.pid)i.pid=mp(i.pid);if(i.linkPid)i.linkPid=mp(i.linkPid);if(i.toPid)i.toPid=mp(i.toPid);});if(l.forcePid)l.forcePid=mp(l.forcePid);if(l.rebuildPids)l.rebuildPids=l.rebuildPids.map(mp);});
   inc.blockers.forEach(b=>b.pid=mp(b.pid));
+  inc.shares.forEach(s=>s.pid=mp(s.pid));
   const st={newLogs:0,newProjects:0,mergedProjects:Object.keys(idMap).length,newBlockers:0,newReviews:0,newMemory:0,touched:new Set()};
   return {inc,del,idMap,st};
 }
@@ -1888,6 +2121,12 @@ function applyMerge({inc,del,idMap,st}){
     if(lr.status==='deleted'||ir.status==='deleted'){lr.status='deleted';lr.text='';return;}
     const score=r=>(r.status==='done'?1e15:0)+((r.thread||[]).length*1e13)+(r.ts||0);
     if(score(ir)>score(lr))Object.assign(lr,ir);lr.seen=lr.seen&&ir.seen;});
+  // 关联分享：删掉的（state=drop）两边都删；对话取长的
+  inc.shares.forEach(is=>{if(del[is.id]||del[is.logId]||!L(is.logId))return;const ls=S.shares.find(s=>s.id===is.id);
+    if(!ls){if(S.shares.some(s=>s.logId===is.logId&&s.state!=='drop')&&is.state!=='drop')return;S.shares.push(is);return;}
+    if(is.state==='drop'||ls.state==='drop')ls.state='drop';else if(is.state==='star')ls.state='star';
+    if((is.thread||[]).length>(ls.thread||[]).length)ls.thread=is.thread;ls.seen=ls.seen&&is.seen;});
+  S.shares=S.shares.filter(s=>!del[s.id]&&L(s.logId));
   // 评价
   inc.feedback.forEach(f=>{const o=S.feedback.find(x=>x.ref===f.ref);if(!o)S.feedback.push(f);else if((f.ts||0)>(o.ts||0))Object.assign(o,f);});
   // 关于你
@@ -1899,12 +2138,29 @@ function applyMerge({inc,del,idMap,st}){
 }
 function readText(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);r.readAsText(f);});}
 function tomb(id){if(id){S.deleted=S.deleted||{};S.deleted[id]=Date.now();}}
-function removeLog(l){tomb(l.id);S.blockers.filter(b=>b.logId===l.id).forEach(b=>tomb(b.id));undoLog(l);(l.photos||[]).forEach(p=>phDel(p.id));S.logs=S.logs.filter(x=>x.id!==l.id);S.feedback=S.feedback.filter(f=>f.ref!==l.id);}
+function removeLog(l){removeShares(l.id);tomb(l.id);S.blockers.filter(b=>b.logId===l.id).forEach(b=>tomb(b.id));undoLog(l);(l.photos||[]).forEach(p=>phDel(p.id));S.logs=S.logs.filter(x=>x.id!==l.id);S.feedback=S.feedback.filter(f=>f.ref!==l.id);}
 
 /* ============ 事件 ============ */
 document.addEventListener('click',ev=>{
   const t=ev.target.closest('button,[data-act]');if(!t)return;
   const d=t.dataset;
+  if(d.fold){const id=d.fold,l=L(id);if(!l)return;
+    if(V.open.has(id)){foldAnim(t.closest('article')?.querySelector('.fbody'),()=>{V.open.delete(id);if(V.replyOpen===id)V.replyOpen=null;render();});return;}
+    V.open.add(id);V.anim=id;let ch=false;if(l.replySeen===false){l.replySeen=true;ch=true;}sharesOf(id).forEach(s=>{if(!s.seen){s.seen=true;ch=true;}});if(ch)save();render();return;}
+  if(d.pfshow){V.pfShow=V.pfShow===d.pfshow?null:d.pfshow;render();return;}
+  if(d.rvpeek){const r=S.reviews.find(x=>x.id===d.rvpeek);if(!r)return;
+    if(V.rvPeek===r.id){foldAnim(document.querySelector('.rvpeek'),()=>{V.rvPeek=null;r.seen=true;save();render();});return;}
+    V.rvPeek=r.id;V.anim='rv';render();return;}
+  if(d.card){const id=d.card;const s=S.shares.find(x=>x.id===id);if(V.cardOpen.has(id))V.cardOpen.delete(id);else{V.cardOpen.add(id);if(s&&!s.seen){s.seen=true;save();}}render();return;}
+  if(d.skind){V.skind=d.skind;render();return;}
+  if(d.kw){copyText(d.kw);return;}
+  if(d.reflog){const r=L(d.reflog);if(!r){toast('那条记录找不到了');return;}V.tab='day';V.day=dkey(r.ts);V.filter='all';V.open.add(r.id);V.flash=r.id;closeSheet();render();return;}
+  if(d.shstar){const s=S.shares.find(x=>x.id===d.shstar);if(s){s.state=s.state==='star'?'new':'star';save();render();toast(s.state==='star'?'留着了，在「清单 → 知识卡片」里':'取消留着');}return;}
+  if(d.shdrop){const s=S.shares.find(x=>x.id===d.shdrop);if(s&&confirm('删除这张知识卡片？')){s.state='drop';save();render();toast('删掉了');}return;}
+  if(d.shmute){const k=d.shmute;S.settings.shareMuted=[...new Set([...(S.settings.shareMuted||[]),k])];save();render();toast('以后不分享这类了，可以在设置里恢复');return;}
+  if(d.unmute){S.settings.shareMuted=(S.settings.shareMuted||[]).filter(k=>k!==d.unmute);save();render();toast('恢复了');return;}
+  if(d.sharemode){S.settings.shareMode=d.sharemode;save();render();return;}
+  if(d.shask){V.shReply=V.shReply===d.shask?null:d.shask;render();setTimeout(()=>document.querySelector('[data-shreply] input')?.focus(),50);return;}
   if(d.nav){V.tab=d.nav;V.replyOpen=null;V.rvReply=null;render();scrollTo(0,0);return;}
   if(d.filter){V.filter=d.filter;render();return;}
   if(d.mon){const m=d.mon;const cur=t.closest('.mon').classList.contains('open');V.mopen[m]=!cur;render();return;}
@@ -1929,10 +2185,10 @@ document.addEventListener('click',ev=>{
   if(d.pcat){pdraft.cat=d.pcat;document.querySelectorAll('[data-pcat]').forEach(b=>b.classList.toggle('on',b.dataset.pcat===d.pcat));return;}
   if(d.pcolor){pdraft.color=d.pcolor;document.querySelectorAll('[data-pcolor]').forEach(b=>b.classList.toggle('on',b.dataset.pcolor===d.pcolor));return;}
   if(d.rvchat){V.rvReply=V.rvReply===d.rvchat?null:d.rvchat;render();setTimeout(()=>document.querySelector('[data-rvreply] input')?.focus(),50);return;}
-  if(d.replyopen){V.replyOpen=V.replyOpen===d.replyopen?null:d.replyopen;render();setTimeout(()=>document.querySelector('[data-reply] input')?.focus(),50);return;}
+  if(d.replyopen){V.replyOpen=V.replyOpen===d.replyopen?null:d.replyopen;V.open.add(d.replyopen);render();setTimeout(()=>document.querySelector('[data-reply] input')?.focus(),50);return;}
   if(d.rereply){const l=L(d.rereply);if(l){l.status='replying';render();replyLog(l);}return;}
-  if(d.retry){const l=L(d.retry);if(!l)return;if(l.stage==='reply'&&l.items.length){l.status='replying';render();replyLog(l).then(()=>updateProfiles(logPids(l),l));}else runLog(l);return;}
-  if(d.askai){const l=L(d.askai);if(l){l.mode='normal';l.status='replying';render();replyLog(l);}return;}
+  if(d.retry){const l=L(d.retry);if(!l)return;if(l.stage==='reply'&&l.items.length){l.status='replying';render();replyLog(l).then(()=>{if(l.status==='done')maybeShare(l);updateProfiles(logPids(l),l);});}else runLog(l);return;}
+  if(d.askai){const l=L(d.askai);if(l){l.mode='normal';l.status='replying';V.open.add(l.id);render();replyLog(l).then(()=>{if(l.status==='done')maybeShare(l);});}return;}
   if(d.edit){composeSheet(null,d.edit);return;}
   if(d.del){if(confirm('删除这条记录？它带来的磕绊变化也会撤回，相关项目的档案会重新整理。')){const l=L(d.del);
     if(l){const pids=logPids(l);removeLog(l);save();render();pids.forEach(pid=>rebuildProfile(pid,false));}}return;}
@@ -1943,7 +2199,7 @@ document.addEventListener('click',ev=>{
   if(d.rvnow){const per=periodOf(d.rvnow,Date.now());generateReview(d.rvnow,per,true);const r=rvFind(d.rvnow,per);if(r&&r.status==='pending'){V.tab='review';V.rid=r.id;render();scrollTo(0,0);}return;}
   if(d.rvregen){const [k,per]=d.rvregen.split('|');generateReview(k,per,true);return;}
   if(d.rvon){const k=d.rvon;S.settings.rv=S.settings.rv||{};S.settings.rv[k]={...rvCfg(k),on:!rvCfg(k).on};save();rvSheet();render();return;}
-  if(d.rate){const [ref,kind,v]=d.rate.split('|');const src=kind==='reply'?L(ref)?.reply:kind==='opener'?S.opener?.text:S.reviews.find(r=>r.id===ref)?.text;
+  if(d.rate){const [ref,kind,v]=d.rate.split('|');const src=kind==='reply'?L(ref)?.reply:kind==='opener'?S.opener?.text:kind==='share'?(()=>{const s=S.shares.find(x=>x.id===ref);return s?s.topic+'：'+s.text:'';})():S.reviews.find(r=>r.id===ref)?.text;
     setRating(ref,kind,src||'',v);V.reasonFor=rating(ref)?ref:null;render();return;}
   if(d.reasonedit){V.reasonFor=d.reasonedit;render();setTimeout(()=>document.querySelector('[data-reasonform] input')?.focus(),50);return;}
   if(d.reason){const [ref,r]=d.reason.split('|');const f=rating(ref);if(f){f.reason=r;save();}V.reasonFor=null;render();toast('记下了，下次会注意');return;}
@@ -1962,7 +2218,7 @@ document.addEventListener('click',ev=>{
   if(d.idea2proj){const i=findItem(d.idea2proj);if(i){closeSheet();projSheet(null,i.content.slice(0,20));pdraft.fromIdea=i.id;$('#pdesc').value=i.content;}return;}
   if(d.editproj){projSheet(d.editproj);return;}
   if(d.arch){const p=P(d.arch);p.archived=!p.archived;save();render();toast(p.archived?'已归档':'已恢复');return;}
-  if(d.delproj){if(confirm('删除项目会同时删除它的全部记录，确定？')){const id=d.delproj;tomb(id);S.logs.filter(l=>l.items.length&&l.items.every(i=>i.pid===id)).forEach(l=>tomb(l.id));S.blockers.filter(b=>b.pid===id).forEach(b=>tomb(b.id));S.projects=S.projects.filter(p=>p.id!==id);
+  if(d.delproj){if(confirm('删除项目会同时删除它的全部记录，确定？')){const id=d.delproj;tomb(id);S.logs.filter(l=>l.items.length&&l.items.every(i=>i.pid===id)).forEach(l=>tomb(l.id));S.blockers.filter(b=>b.pid===id).forEach(b=>tomb(b.id));S.shares.filter(s=>s.pid===id).forEach(s=>tomb(s.id));S.shares=S.shares.filter(s=>s.pid!==id);S.projects=S.projects.filter(p=>p.id!==id);
     S.logs.forEach(l=>l.items=l.items.filter(i=>i.pid!==id));S.logs=S.logs.filter(l=>l.items.length||l.status!=='done');S.blockers=S.blockers.filter(b=>b.pid!==id);save();closeSheet();V.tab='projects';render();}return;}
   if(d.preset){const pr=PRESETS[d.preset];S.settings.preset=d.preset;if(d.preset!=='custom'){$('#s_base').value=pr.base;$('#s_model').value=pr.model;}document.querySelectorAll('[data-preset]').forEach(b=>b.classList.toggle('on',b.dataset.preset===d.preset));return;}
   if(d.voice){S.settings.voice=d.voice;save();render();return;}
@@ -1982,6 +2238,7 @@ document.addEventListener('click',ev=>{
   if(act==='newproj'){projSheet();return;}
   if(act==='rvmore'){V.rvMore=!V.rvMore;render();return;}
   if(act==='rvsettings'){rvSheet();return;}
+  if(act==='opopen'){if(V.opOpen){foldAnim(document.querySelector('.opener'),()=>{V.opOpen=false;render();});return;}V.opOpen=true;V.anim='op';if(S.opener&&!S.opener.seen){S.opener.seen=true;save();}render();return;}
   if(act==='dismissop'){S.opener.dismissed=true;save();render();fillCop();return;}
   if(act==='confirmsave'){saveConfirm();return;}
   if(act==='confirmdrop'){const l=L(cdraft.id);if(!l)return;
@@ -1999,8 +2256,8 @@ document.addEventListener('click',ev=>{
     if(l){const oldPids=[...new Set([...(l.rebuildPids||[]),...logPids(l)])];undoLog(l);
       const keep=new Set(photos.map(p=>p.id));(l.photos||[]).forEach(p=>{if(!keep.has(p.id))phDel(p.id);});
       const same=(l.photos||[]).map(p=>p.id).join()===photos.map(p=>p.id).join();
-      Object.assign(l,{mt:Date.now(),raw,mode,forcePid,items:[],reply:'',thread:[],exception:false,rebuildPids:oldPids,photos,photoText:same?l.photoText:''});S.feedback=S.feedback.filter(f=>f.ref!==l.id);}
-    else{setDraft('');l={id:uid('e'),ts:Date.now(),raw,mode,forcePid,items:[],mood:'neutral',reply:'',status:'splitting',thread:[],voiceEmotion:draft.voiceEmotion||'',photos,photoText:''};S.logs.push(l);}
+      removeShares(l.id);V.open.delete(l.id);Object.assign(l,{mt:Date.now(),raw,mode,forcePid,items:[],reply:'',replySeen:false,hook:null,thread:[],digested:0,exception:false,rebuildPids:oldPids,photos,photoText:same?l.photoText:''});S.feedback=S.feedback.filter(f=>f.ref!==l.id);V.fresh.add(l.id);}
+    else{setDraft('');l={id:uid('e'),ts:Date.now(),raw,mode,forcePid,items:[],mood:'neutral',reply:'',replySeen:false,status:'splitting',thread:[],voiceEmotion:draft.voiceEmotion||'',photos,photoText:''};S.logs.push(l);V.fresh.add(l.id);}
     save();closeSheet();if(V.tab!=='project'){V.tab='day';V.day=dkey(l.ts);}scrollTo(0,0);runLog(l);return;
   }
   if(act==='saveproj'){
@@ -2030,6 +2287,7 @@ $('#mask').addEventListener('click',ev=>{if(ev.target.id==='mask')closeSheet();}
 $('#fab').addEventListener('click',()=>composeSheet());
 document.addEventListener('submit',ev=>{const f=ev.target;
   if(f.dataset.rvreply){ev.preventDefault();const t=f.querySelector('input').value.trim();const r=S.reviews.find(x=>x.id===f.dataset.rvreply);if(t&&r){V.rvReply=null;rvFollowUp(r,t);}return;}
+  if(f.dataset.shreply){ev.preventDefault();const t=f.querySelector('input').value.trim();const s=S.shares.find(x=>x.id===f.dataset.shreply);if(t&&s){V.shReply=null;shareFollowUp(s,t);}return;}
   if(f.dataset.reply){ev.preventDefault();const t=f.querySelector('input').value.trim();const l=L(f.dataset.reply);if(t&&l){V.replyOpen=null;followUp(l,t);}}
   if(f.dataset.cnewform!==undefined){ev.preventDefault();const k=+f.dataset.cnewform;const nm=f.querySelector('input').value.trim().slice(0,20);
     if(!nm){toast('给项目起个名字');return;}
@@ -2071,6 +2329,7 @@ document.addEventListener('keydown',ev=>{if(ev.key==='Escape')closeSheet();if((e
 S.logs.forEach(l=>{if(l.status==='splitting'||l.status==='replying'){l.stage=l.status==='replying'?'reply':'split';l.status='error';l.err='上次没等到就关掉了，点「重试」。';}l.replying=false;});
 S.reviews.forEach(r=>{if(r.status==='pending'){r.status='error';r.text='上次没生成完。';}r.replying=false;});
 if(S.opener&&S.opener.status==='pending')S.opener=null;
+S.shares.forEach(s=>s.replying=false);
 save();render();
 autoCompose();
 makeOpener(false);
